@@ -71,11 +71,36 @@ void combat_spawn(GameState *gs) {
     e->dropChance= et->dropChance;
     e->stunned   = 0;
     e->slowed    = 0;
+
+    gs->isElite = 0;
+    if (!isBoss && randf() < 0.05f) {
+        gs->isElite = 1;
+        char eliteName[MAX_NAME];
+        snprintf(eliteName, MAX_NAME, "Elite %s", et->name);
+        strncpy(e->name, eliteName, MAX_NAME - 1);
+        e->maxHp     *= 3;
+        e->hp         = e->maxHp;
+        e->attack    *= 3;
+        e->defense   *= 3;
+        e->xpReward  *= 3;
+        e->goldReward*= 3;
+        e->dropChance = 1.0f;
+    }
+
+    if (gs->hardModeActive) {
+        int a0 = gs->activeAffixes[0], a1 = gs->activeAffixes[1];
+        if (a0 == 0 || a1 == 0) { e->maxHp = e->maxHp * 130 / 100; e->hp = e->maxHp; }
+        if (a0 == 1 || a1 == 1) { e->attack = e->attack * 120 / 100; }
+    }
+
     gs->hasEnemy = 1;
 
     char buf[LOG_LINE_W + 1];
     if (isBoss) {
         snprintf(buf, sizeof(buf), "*** BOSS: %s *** (HP:%d)", e->name, e->maxHp);
+        ui_log(gs, buf, CP_YELLOW);
+    } else if (gs->isElite) {
+        snprintf(buf, sizeof(buf), "!! ELITE: %s !! (HP:%d)", e->name, e->maxHp);
         ui_log(gs, buf, CP_YELLOW);
     } else {
         snprintf(buf, sizeof(buf), "A %s appears! (HP:%d)", e->name, e->maxHp);
@@ -83,13 +108,76 @@ void combat_spawn(GameState *gs) {
     }
 }
 
-/* Tick all active buffs: apply HoT/DoT, decrement timers, remove expired (reverse iteration). */
+void check_achievements(GameState *gs) {
+    Hero *h = &gs->hero;
+    int before[4];
+    for (int i = 0; i < 4; i++) before[i] = h->achievements[i];
+
+    if (h->totalKills >= 1)    ACH_SET(h, 0);
+    if (h->totalKills >= 100)  ACH_SET(h, 1);
+    if (h->totalKills >= 1000) ACH_SET(h, 2);
+    if (h->totalKills >= 5000) ACH_SET(h, 3);
+
+    int bossSum = 0;
+    int allBosses = 1;
+    for (int d = 0; d < NUM_DUNGEONS; d++) {
+        bossSum += h->bossKills[d];
+        if (h->bossKills[d] == 0) allBosses = 0;
+    }
+    if (bossSum >= 1)  ACH_SET(h, 4);
+    if (bossSum >= 10) ACH_SET(h, 5);
+    if (allBosses)     ACH_SET(h, 6);
+
+    if (h->level >= 10) ACH_SET(h, 7);
+    if (h->level >= 25) ACH_SET(h, 8);
+    if (h->level >= 50) ACH_SET(h, 9);
+    if (h->level >= 75) ACH_SET(h, 10);
+    if (h->level >= 99) ACH_SET(h, 11);
+
+    int allEquipped = 1;
+    int allEpic = 1;
+    int allLegendary = 1;
+    for (int s = 0; s < NUM_SLOTS; s++) {
+        if (!h->hasEquip[s]) { allEquipped = 0; allEpic = 0; allLegendary = 0; break; }
+        if (h->equipment[s].rarity < RARITY_EPIC) allEpic = 0;
+        if (h->equipment[s].rarity < RARITY_LEGENDARY) allLegendary = 0;
+    }
+    if (allEquipped)  ACH_SET(h, 12);
+    if (allEpic)      ACH_SET(h, 13);
+    if (allLegendary) ACH_SET(h, 14);
+
+    if (h->totalGoldEarned >= 10000)  ACH_SET(h, 15);
+    if (h->totalGoldEarned >= 100000) ACH_SET(h, 16);
+    if (h->deaths >= 10) ACH_SET(h, 17);
+    if (h->eliteKills >= 1) ACH_SET(h, 18);
+    if (h->hardModeClears >= 1) ACH_SET(h, 19);
+
+    for (int i = 0; i < 4; i++) {
+        uint32_t fresh = h->achievements[i] & ~before[i];
+        while (fresh) {
+            int bit = __builtin_ctz(fresh);
+            int idx = i * 32 + bit;
+            if (idx < NUM_ACHIEVEMENTS) {
+                const AchievementDef *ad = data_achievement(idx);
+                if (ad) {
+                    char buf[LOG_LINE_W + 1];
+                    snprintf(buf, sizeof(buf), "[ACHIEVEMENT] %s!", ad->name);
+                    ui_log(gs, buf, CP_YELLOW);
+                }
+            }
+            fresh &= fresh - 1;
+        }
+    }
+}
+
 void combat_tick_buffs(GameState *gs) {
     Hero *h = &gs->hero;
     for (int i = h->numBuffs - 1; i >= 0; i--) {
         Buff *b = &h->buffs[i];
         if (b->healPerTick > 0) {
+            int prevHp = h->hp;
             hero_heal(h, b->healPerTick);
+            gs->combatHealed += h->hp - prevHp;
         }
         if (b->dmgPerTick > 0 && gs->hasEnemy) {
             gs->enemy.hp -= b->dmgPerTick;
@@ -281,9 +369,17 @@ static void apply_skill(GameState *gs, const SkillDef *sk) {
         h->buffs[h->numBuffs++] = b;
     }
 
+    if (totalDmg > 0) gs->combatDmgDealt += totalDmg;
+
     if (sk->healPct > 0) {
         int heal = es.maxHp * sk->healPct / 100;
+        if (gs->hardModeActive) {
+            int a0 = gs->activeAffixes[0], a1 = gs->activeAffixes[1];
+            if (a0 == 2 || a1 == 2) heal = heal * 80 / 100;
+        }
+        int prevHp = h->hp;
         hero_heal(h, heal);
+        gs->combatHealed += h->hp - prevHp;
     }
 
     if (sk->manaPct > 0) {
@@ -387,12 +483,22 @@ void combat_tick(GameState *gs) {
     char buf[LOG_LINE_W + 1];
 
     gs->tickCount++;
+    gs->combatTicks++;
 
     for (int t = 0; t < MAX_SKILL_TIERS; t++)
         if (h->skillCooldowns[t] > 0) h->skillCooldowns[t]--;
 
     const ClassDef *cd = data_class(h->classId);
     hero_restore_resource(h, cd->resourceRegen);
+
+    if (gs->hardModeActive) {
+        int a0 = gs->activeAffixes[0], a1 = gs->activeAffixes[1];
+        if (a0 == 5 || a1 == 5) {
+            int drain = h->maxHp / 100;
+            if (drain < 1) drain = 1;
+            h->hp -= drain;
+        }
+    }
 
     combat_tick_buffs(gs);
     combat_try_skills(gs);
@@ -414,6 +520,7 @@ void combat_tick(GameState *gs) {
     int finalDmg = baseDmg - armored;
     if (finalDmg < 1) finalDmg = 1;
     e->hp -= finalDmg;
+    gs->combatDmgDealt += finalDmg;
 
     if (isCrit)
         snprintf(buf, sizeof(buf), "You crit %s for %d! [CRIT]", e->name, finalDmg);
@@ -424,21 +531,32 @@ void combat_tick(GameState *gs) {
 enemy_killed:
     if (e->hp <= 0) {
         h->totalKills++;
+        if (gs->isElite) h->eliteKills++;
         int gold = e->goldReward / 4;
         if (gold < 1) gold = 1;
+        if (gs->hardModeActive) gold = gold * 150 / 100;
         h->gold += gold;
         h->totalGoldEarned += gold;
 
         int xp = (int)(e->xpReward * es.xpMultiplier);
+        if (gs->hardModeActive) xp = xp * 150 / 100;
 
         if (gs->bossActive) {
+            h->bossKills[gs->currentDungeon]++;
+            if (gs->hardModeActive) h->hardModeClears++;
+            if (!h->hardMode[gs->currentDungeon])
+                h->hardMode[gs->currentDungeon] = 1;
             snprintf(buf, sizeof(buf), "*** %s SLAIN! *** +%dXP +%dG",
                      e->name, xp, gold);
             ui_log(gs, buf, CP_YELLOW);
             try_boss_loot(gs);
             hero_add_xp(gs, xp);
             int regen = es.stats[VIT] * 2;
-            hero_heal(h, regen);
+            if (gs->hardModeActive) {
+                int a0 = gs->activeAffixes[0], a1 = gs->activeAffixes[1];
+                if (a0 == 2 || a1 == 2) regen = regen * 80 / 100;
+            }
+            { int prevHp = h->hp; hero_heal(h, regen); gs->combatHealed += h->hp - prevHp; }
             gs->hasEnemy = 0;
             gs->bossTimer = BOSS_DELAY;
             ui_log(gs, "The dungeon falls silent...", CP_MAGENTA);
@@ -446,26 +564,39 @@ enemy_killed:
             gs->dungeonKills++;
             snprintf(buf, sizeof(buf), "Slew %s! +%dXP +%dG",
                      e->name, xp, gold);
-            ui_log(gs, buf, CP_GREEN);
-            try_loot_drop(gs);
+            ui_log(gs, buf, gs->isElite ? CP_YELLOW : CP_GREEN);
+            if (gs->isElite) {
+                try_boss_loot(gs);
+            } else {
+                try_loot_drop(gs);
+            }
             hero_add_xp(gs, xp);
             int regen = es.stats[VIT] * 2;
-            hero_heal(h, regen);
+            if (gs->hardModeActive) {
+                int a0 = gs->activeAffixes[0], a1 = gs->activeAffixes[1];
+                if (a0 == 2 || a1 == 2) regen = regen * 80 / 100;
+            }
+            { int prevHp = h->hp; hero_heal(h, regen); gs->combatHealed += h->hp - prevHp; }
             combat_spawn(gs);
         }
+        check_achievements(gs);
         return;
     }
 
-    if (e->stunned > 0) {
+    int frenzied = gs->hardModeActive &&
+        (gs->activeAffixes[0] == 4 || gs->activeAffixes[1] == 4);
+    if (e->stunned > 0 && !frenzied) {
         e->stunned--;
         ui_log(gs, "Enemy is stunned!", CP_CYAN);
         return;
     }
-    if (e->slowed > 0) {
+    if (e->slowed > 0 && !frenzied) {
         e->slowed--;
         ui_log(gs, "Enemy is slowed...", CP_CYAN);
         return;
     }
+    e->stunned = 0;
+    e->slowed = 0;
 
     int dodgeNext = has_buff_flag(h, 0, 0, 1, 0);
     float totalDodge = es.dodgeChance + total_buff_val(h, 1);
@@ -498,6 +629,17 @@ enemy_killed:
         ui_log(gs, buf, CP_RED);
     }
 
+    if (gs->hardModeActive) {
+        int a0 = gs->activeAffixes[0], a1 = gs->activeAffixes[1];
+        if (a0 == 3 || a1 == 3) {
+            int thorns = eDmg / 10;
+            if (thorns < 1) thorns = 1;
+            e->hp -= thorns;
+        }
+    }
+
+    gs->combatDmgTaken += eDmg;
+
     if (has_buff_flag(h, 0, 1, 0, 0) && h->resource >= eDmg) {
         h->resource -= eDmg;
         snprintf(buf, sizeof(buf), "Mana Shield absorbs %d damage!", eDmg);
@@ -526,8 +668,13 @@ enemy_killed:
         h->numBuffs = 0;
         gs->dungeonKills = 0;
         gs->bossActive = 0;
+        gs->combatDmgDealt = 0;
+        gs->combatDmgTaken = 0;
+        gs->combatHealed = 0;
+        gs->combatTicks = 0;
         snprintf(buf, sizeof(buf), "You died! Lost %d gold. Reviving...", goldLoss);
         ui_log(gs, buf, CP_RED);
         gs->deathTimer = 4;
+        check_achievements(gs);
     }
 }
