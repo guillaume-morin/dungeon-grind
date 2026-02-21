@@ -389,6 +389,49 @@ static void render_dungeon_select(GameState *gs) {
     wnoutrefresh(w);
 }
 
+/* ── equipment bag sort/filter ─────────────────────────────────────── */
+
+#define NUM_EQUIP_SORTS 3
+static const char *EQUIP_SORT_NAMES[] = { "Rarity", "Slot", "Level" };
+static const char *SLOT_ABBR[] = { "Wpn", "Hlm", "Cht", "Leg", "Bts", "Rng", "Aml" };
+static const char  SLOT_CHAR[] = { 'W',   'H',   'C',   'L',   'B',   'R',   'A' };
+
+static const Hero *s_sortHero;
+static int s_sortMode;
+
+static int inv_cmp(const void *a, const void *b) {
+    int ia = *(const int *)a, ib = *(const int *)b;
+    const ItemDef *A = &s_sortHero->inventory[ia];
+    const ItemDef *B = &s_sortHero->inventory[ib];
+    switch (s_sortMode) {
+    case 0:
+        if (A->rarity != B->rarity) return B->rarity - A->rarity;
+        if (A->levelReq != B->levelReq) return B->levelReq - A->levelReq;
+        return ia - ib;
+    case 1:
+        if (A->slot != B->slot) return A->slot - B->slot;
+        if (A->rarity != B->rarity) return B->rarity - A->rarity;
+        return ia - ib;
+    case 2:
+        if (A->levelReq != B->levelReq) return B->levelReq - A->levelReq;
+        if (A->rarity != B->rarity) return B->rarity - A->rarity;
+        return ia - ib;
+    }
+    return 0;
+}
+
+static int inv_build_view(const Hero *h, int filter, int sort, int *out, int max) {
+    int n = 0;
+    for (int i = 0; i < h->invCount && n < max; i++) {
+        if (filter >= 0 && h->inventory[i].slot != filter) continue;
+        out[n++] = i;
+    }
+    s_sortHero = h;
+    s_sortMode = sort;
+    if (n > 1) qsort(out, n, sizeof(int), inv_cmp);
+    return n;
+}
+
 static void render_equipment(GameState *gs) {
     WINDOW *w = gs->wLeft;
     werase(w);
@@ -403,19 +446,18 @@ static void render_equipment(GameState *gs) {
     int row = 3;
     for (int s = 0; s < NUM_SLOTS; s++) {
         int sel = (s == gs->menuIdx);
-        const char *slotN = data_slot_name(s);
 
         if (gs->hero.hasEquip[s]) {
             int rc = data_rarity_color(gs->hero.equipment[s].rarity);
             if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
             else     wattron(w, COLOR_PAIR(rc));
-            mvwprintw(w, row, 1, "%s%-7s %-15.15s",
-                      sel ? " > " : "   ", slotN, gs->hero.equipment[s].name);
+            mvwprintw(w, row, 1, "%s%-4s%-18.18s",
+                      sel ? " > " : "   ", SLOT_ABBR[s], gs->hero.equipment[s].name);
         } else {
             if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
             else     wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row, 1, "%s%-7s %-15s",
-                      sel ? " > " : "   ", slotN, "--");
+            mvwprintw(w, row, 1, "%s%-4s--",
+                      sel ? " > " : "   ", SLOT_ABBR[s]);
         }
         wattroff(w, COLOR_PAIR(CP_SELECTED));
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
@@ -425,36 +467,66 @@ static void render_equipment(GameState *gs) {
     mvwhline(w, row, 1, ACS_HLINE, LEFT_W - 2);
     row++;
 
+    int filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+    int viewIdx[MAX_INVENTORY];
+    int viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
+
+    const char *fn = gs->equipFilter == 0 ? "All" : data_slot_name(gs->equipFilter - 1);
     wattron(w, COLOR_PAIR(CP_WHITE));
-    mvwprintw(w, row++, 2, "Bag (%d)", gs->hero.invCount);
+    mvwprintw(w, row, 2, "<%s> (%d)", fn, viewN);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
-    int maxBagRows = PANEL_H - row - 3;
-    int bagScroll = 0;
-    int bagIdx = gs->menuIdx - NUM_SLOTS;
-    if (bagIdx >= maxBagRows) bagScroll = bagIdx - maxBagRows + 1;
+    const char *sn = EQUIP_SORT_NAMES[gs->equipSort];
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, row, LEFT_W - 2 - (int)strlen(sn), "%s", sn);
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    row++;
 
-    for (int i = 0; i < gs->hero.invCount && i - bagScroll < maxBagRows; i++) {
-        if (i < bagScroll) continue;
-        int sel = (gs->menuIdx == NUM_SLOTS + i);
-        int rc = data_rarity_color(gs->hero.inventory[i].rarity);
-        const char *sn = data_slot_name(gs->hero.inventory[i].slot);
+    int maxBagRows = PANEL_H - row - 4;
+    int bagSel = gs->menuIdx - NUM_SLOTS;
+    int bagScroll = 0;
+    if (bagSel >= maxBagRows) bagScroll = bagSel - maxBagRows + 1;
+
+    for (int vi = 0; vi < viewN && vi - bagScroll < maxBagRows; vi++) {
+        if (vi < bagScroll) continue;
+        int invI = viewIdx[vi];
+        int sel = (gs->menuIdx == NUM_SLOTS + vi);
+        int rc = data_rarity_color(gs->hero.inventory[invI].rarity);
 
         if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
         else     wattron(w, COLOR_PAIR(rc));
-        mvwprintw(w, row, 1, "%s%-15.15s %s",
-                  sel ? " > " : "   ", gs->hero.inventory[i].name, sn);
+
+        if (gs->equipFilter > 0)
+            mvwprintw(w, row, 1, "%s%-23.23s",
+                      sel ? " > " : "   ", gs->hero.inventory[invI].name);
+        else
+            mvwprintw(w, row, 1, "%s%c %-21.21s",
+                      sel ? " > " : "   ", SLOT_CHAR[gs->hero.inventory[invI].slot],
+                      gs->hero.inventory[invI].name);
+
         wattroff(w, COLOR_PAIR(CP_SELECTED));
         wattroff(w, COLOR_PAIR(rc));
         row++;
     }
 
+    if (viewN == 0 && gs->hero.invCount > 0) {
+        wattron(w, COLOR_PAIR(CP_DEFAULT));
+        mvwprintw(w, row, 3, "(none for this slot)");
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    } else if (viewN == 0) {
+        wattron(w, COLOR_PAIR(CP_DEFAULT));
+        mvwprintw(w, row, 3, "(empty)");
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    }
+
     int inSlots = gs->menuIdx < NUM_SLOTS;
     wattron(w, COLOR_PAIR(CP_CYAN));
     if (inSlots && gs->hero.hasEquip[gs->menuIdx])
-        mvwprintw(w, PANEL_H - 3, 2, "[Enter] Unequip");
-    else if (!inSlots && bagIdx >= 0 && bagIdx < gs->hero.invCount)
-        mvwprintw(w, PANEL_H - 3, 2, "[Enter] Equip");
+        mvwprintw(w, PANEL_H - 5, 2, "[Enter] Unequip");
+    else if (!inSlots && bagSel >= 0 && bagSel < viewN)
+        mvwprintw(w, PANEL_H - 5, 2, "[Enter] Equip");
+    mvwprintw(w, PANEL_H - 4, 2, "[X]Sell  [1-4]Sell<Rar");
+    mvwprintw(w, PANEL_H - 3, 2, "[S]ort  [</>]Filter");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
@@ -1389,15 +1461,17 @@ static void render_ency_combat_detail(GameState *gs) {
     wnoutrefresh(w);
 }
 
-/* Return the item currently highlighted in the equipment screen (equipped slot or bag item). */
 static const ItemDef *equip_highlighted(const GameState *gs) {
     if (gs->menuIdx < NUM_SLOTS) {
         if (gs->hero.hasEquip[gs->menuIdx])
             return &gs->hero.equipment[gs->menuIdx];
     } else {
+        int filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+        int viewIdx[MAX_INVENTORY];
+        int viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
         int bi = gs->menuIdx - NUM_SLOTS;
-        if (bi >= 0 && bi < gs->hero.invCount)
-            return &gs->hero.inventory[bi];
+        if (bi >= 0 && bi < viewN)
+            return &gs->hero.inventory[viewIdx[bi]];
     }
     return NULL;
 }
@@ -2109,10 +2183,37 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_EQUIPMENT: {
-        int totalItems = NUM_SLOTS + gs->hero.invCount;
+        int filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+        int viewIdx[MAX_INVENTORY];
+        int viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
+        int totalItems = NUM_SLOTS + viewN;
         if (totalItems < NUM_SLOTS) totalItems = NUM_SLOTS;
+
         if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = totalItems - 1; }
         if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= totalItems) gs->menuIdx = 0; }
+
+        if (ch == KEY_LEFT || ch == 'a') {
+            gs->equipFilter--;
+            if (gs->equipFilter < 0) gs->equipFilter = NUM_SLOTS;
+            if (gs->menuIdx >= NUM_SLOTS) gs->menuIdx = NUM_SLOTS;
+            filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+            viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
+            if (gs->menuIdx >= NUM_SLOTS && viewN == 0)
+                gs->menuIdx = NUM_SLOTS - 1;
+        }
+        if (ch == KEY_RIGHT || ch == 'd') {
+            gs->equipFilter++;
+            if (gs->equipFilter > NUM_SLOTS) gs->equipFilter = 0;
+            if (gs->menuIdx >= NUM_SLOTS) gs->menuIdx = NUM_SLOTS;
+            filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+            viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
+            if (gs->menuIdx >= NUM_SLOTS && viewN == 0)
+                gs->menuIdx = NUM_SLOTS - 1;
+        }
+        if (ch == 'S') {
+            gs->equipSort = (gs->equipSort + 1) % NUM_EQUIP_SORTS;
+        }
+
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->menuIdx < NUM_SLOTS) {
                 if (gs->hero.hasEquip[gs->menuIdx]) {
@@ -2123,18 +2224,23 @@ void ui_handle_key(GameState *gs, int ch) {
                 }
             } else {
                 int bagIdx = gs->menuIdx - NUM_SLOTS;
-                if (bagIdx >= 0 && bagIdx < gs->hero.invCount) {
-                    ItemDef tmp = gs->hero.inventory[bagIdx];
+                if (bagIdx >= 0 && bagIdx < viewN) {
+                    int realIdx = viewIdx[bagIdx];
+                    ItemDef tmp = gs->hero.inventory[realIdx];
                     if (hero_equip(&gs->hero, &tmp)) {
-                        for (int i = bagIdx; i < gs->hero.invCount - 1; i++)
+                        for (int i = realIdx; i < gs->hero.invCount - 1; i++)
                             gs->hero.inventory[i] = gs->hero.inventory[i + 1];
                         gs->hero.invCount--;
                         char b[LOG_LINE_W + 1];
                         snprintf(b, sizeof(b), "Equipped %s.", tmp.name);
                         ui_log(gs, b, CP_GREEN);
-                        int newTotal = NUM_SLOTS + gs->hero.invCount;
-                        if (gs->menuIdx >= newTotal && newTotal > 0)
+                        filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+                        viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
+                        int newTotal = NUM_SLOTS + viewN;
+                        if (gs->menuIdx >= newTotal && newTotal > NUM_SLOTS)
                             gs->menuIdx = newTotal - 1;
+                        else if (viewN == 0)
+                            gs->menuIdx = NUM_SLOTS - 1;
                     } else {
                         ui_log(gs, "Can't equip that.", CP_RED);
                     }
@@ -2143,20 +2249,25 @@ void ui_handle_key(GameState *gs, int ch) {
         }
         if (ch == 'x' || ch == 'X') {
             int bagIdx = gs->menuIdx - NUM_SLOTS;
-            if (bagIdx >= 0 && bagIdx < gs->hero.invCount) {
-                ItemDef sold = gs->hero.inventory[bagIdx];
+            if (bagIdx >= 0 && bagIdx < viewN) {
+                int realIdx = viewIdx[bagIdx];
+                ItemDef sold = gs->hero.inventory[realIdx];
                 int sellPrice = sold.price / 2;
                 if (sellPrice < 1) sellPrice = 1;
                 gs->hero.gold += sellPrice;
-                for (int i = bagIdx; i < gs->hero.invCount - 1; i++)
+                for (int i = realIdx; i < gs->hero.invCount - 1; i++)
                     gs->hero.inventory[i] = gs->hero.inventory[i + 1];
                 gs->hero.invCount--;
                 char b[LOG_LINE_W + 1];
                 snprintf(b, sizeof(b), "Sold %s for %d gold.", sold.name, sellPrice);
                 ui_log(gs, b, CP_YELLOW);
-                int newTotal = NUM_SLOTS + gs->hero.invCount;
-                if (gs->menuIdx >= newTotal && newTotal > 0)
+                filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+                viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
+                int newTotal = NUM_SLOTS + viewN;
+                if (gs->menuIdx >= newTotal && newTotal > NUM_SLOTS)
                     gs->menuIdx = newTotal - 1;
+                else if (viewN == 0)
+                    gs->menuIdx = NUM_SLOTS - 1;
             } else if (gs->menuIdx < NUM_SLOTS) {
                 ui_log(gs, "Unequip first to sell.", CP_RED);
             }
@@ -2182,9 +2293,13 @@ void ui_handle_key(GameState *gs, int ch) {
                          count, count > 1 ? "s" : "",
                          data_rarity_name(threshold), totalGold);
                 ui_log(gs, b, CP_YELLOW);
-                int newTotal = NUM_SLOTS + gs->hero.invCount;
-                if (gs->menuIdx >= newTotal && newTotal > 0)
+                filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
+                viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
+                int newTotal = NUM_SLOTS + viewN;
+                if (gs->menuIdx >= newTotal && newTotal > NUM_SLOTS)
                     gs->menuIdx = newTotal - 1;
+                else if (viewN == 0 && gs->menuIdx >= NUM_SLOTS)
+                    gs->menuIdx = NUM_SLOTS - 1;
             } else {
                 char b[LOG_LINE_W + 1];
                 snprintf(b, sizeof(b), "No items below %s to sell.",

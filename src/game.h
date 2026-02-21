@@ -265,6 +265,8 @@ typedef struct {
     int     shopSlot;
     int     encycSlot;
     int     saveSlot;
+    int     equipSort;    /* 0=rarity desc, 1=slot, 2=level desc (bag only) */
+    int     equipFilter;  /* 0=all, 1..NUM_SLOTS = slot 0..6 (bag only) */
     SaveSlotInfo slotInfo[NUM_SAVE_SLOTS];
 
     int     running;

@@ -1,0 +1,103 @@
+DUNGEON GRIND — IMPROVEMENT PROPOSALS
+======================================
+Updated: February 2026
+
+Ranked suggestions for new features and systems, from most impactful to least.
+Items marked [SELECTED] were chosen for implementation.
+Items marked [DONE] have been implemented.
+
+
+────────────────────────────────────────────────────────────
+#1  Prestige / New Game+ System
+────────────────────────────────────────────────────────────
+After clearing Dungeon 9 boss, option to reset to Lv1 with a permanent
+multiplier (+5% damage and XP per prestige level). Keeps loot, keeps
+achievements. Adds infinite replayability to the endgame loop.
+
+
+────────────────────────────────────────────────────────────
+#2  Companion / Pet System
+────────────────────────────────────────────────────────────
+Passive companion that provides a small bonus (e.g., +10% gold, +5% crit,
+periodic heal). Earned from boss kills or achievements. One active at a time,
+stored in a collection. Low-effort way to add collection depth.
+
+
+────────────────────────────────────────────────────────────
+#3  Dungeon Exploration with Rooms
+────────────────────────────────────────────────────────────
+Instead of infinite enemy spawns, dungeons have 10-20 rooms. Each room has
+a random encounter (enemy, treasure chest, trap, shrine buff). Boss is the
+final room. Creates a sense of progression within each dungeon run.
+
+
+────────────────────────────────────────────────────────────
+#4  Crafting System
+────────────────────────────────────────────────────────────
+Enemies drop materials (Leather, Iron, Gems). Combine materials to craft
+items or upgrade existing ones. Adds an alternate progression path to pure
+loot RNG. Recipes discovered in dungeons or from boss kills.
+
+
+────────────────────────────────────────────────────────────
+#5  Achievement System                                    [SELECTED]
+────────────────────────────────────────────────────────────
+Track milestones (first boss kill, 1000 kills, max level, full legendary
+set). Achievements grant small permanent bonuses. Bitfield storage in Hero,
+check hooks after kills/boss/level-ups/equipment changes. New encyclopedia
+sub-screen to view progress.
+
+
+────────────────────────────────────────────────────────────
+#6  Dungeon Hard Mode with Affixes                        [SELECTED]
+────────────────────────────────────────────────────────────
+After clearing a dungeon (beating boss), unlock hard mode with random affixes
+(enemies +30% HP, hero -20% healing, bosses enrage after 60s). Better loot
+as reward. Per-dungeon unlock flag in Hero, modifier applied in combat.
+
+
+────────────────────────────────────────────────────────────
+#7  Passive Skill Tree
+────────────────────────────────────────────────────────────
+Separate from active skills. Spend "insight points" (earned every 5 levels)
+on a branching tree of small passives: +3% crit, +5% gold, +10 HP, etc.
+Adds build diversity without touching the active skill system.
+
+
+────────────────────────────────────────────────────────────
+#8  Combat Log DPS/HPS Tracking                           [SELECTED]
+────────────────────────────────────────────────────────────
+Track total damage dealt, taken, healed, and ticks elapsed during combat.
+Display DPS/HPS in the combat log or enemy panel. Counters in GameState,
+no save changes needed. Helps players evaluate builds quantitatively.
+
+
+────────────────────────────────────────────────────────────
+#9  Rare Elite Enemy Encounters                           [SELECTED]
+────────────────────────────────────────────────────────────
+5% chance on spawn to create elite variant (golden name, 3x stats, guaranteed
+rare+ drop). Flag in GameState, minor changes to combat_spawn. Adds exciting
+moments to the grind loop.
+
+
+────────────────────────────────────────────────────────────
+#10  Cosmetic Title System                                [SELECTED]
+────────────────────────────────────────────────────────────
+Earn titles from achievements and boss kills. Stored in Hero, displayed in
+header bar. Title selection UI. Pure cosmetic reward that signals progression.
+
+
+────────────────────────────────────────────────────────────
+#11  Equipment Menu Redesign                              [DONE]
+────────────────────────────────────────────────────────────
+Problems: names truncated to 15 chars, no way to browse by slot, no sorting,
+cluttered bag display.
+
+Solution:
+  - Sort inventory by Rarity (desc), Slot, or Level (desc) — toggle with [S]
+  - Filter by equipment slot using left/right keys — cycle All/Weapon/.../Amulet
+  - Wider item names: 18 chars for equipped, 21-23 chars for bag items
+  - 3-char slot abbreviations (Wpn, Hlm, Cht, Leg, Bts, Rng, Aml)
+  - Single-char slot tag in bag "All" view (W, H, C, L, B, R, A)
+  - Filter/sort bar between equipped section and bag
+  - Sorted view is UI-only (uses index array, doesn't modify inventory order)
