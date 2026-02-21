@@ -238,14 +238,11 @@ static void render_class_select(GameState *gs) {
         const ClassDef *cd = data_class(i);
         if (i == gs->menuIdx) {
             wattron(w, COLOR_PAIR(CP_SELECTED));
-            mvwprintw(w, 3 + i * 3, 1, " > %-22s", cd->name);
+            mvwprintw(w, 3 + i, 1, " > %s %-19.19s", cd->symbol, cd->name);
             wattroff(w, COLOR_PAIR(CP_SELECTED));
-            wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, 4 + i * 3, 3, "%-23.23s", cd->description);
-            wattroff(w, COLOR_PAIR(CP_DEFAULT));
         } else {
             wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, 3 + i * 3, 1, "   %-22s", cd->name);
+            mvwprintw(w, 3 + i, 1, "   %s %-19.19s", cd->symbol, cd->name);
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
     }
@@ -1772,6 +1769,10 @@ static void render_enemy_panel(GameState *gs) {
                 cmp = &gs->hero.equipment[slot];
         }
         render_item_detail(gs, it, cmp);
+        return;
+    }
+    if (gs->screen == SCR_CLASS_SELECT) {
+        render_ency_classes_detail(gs);
         return;
     }
     if (gs->screen == SCR_ENCYCLOPEDIA) {
