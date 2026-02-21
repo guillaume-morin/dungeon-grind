@@ -827,7 +827,7 @@ static void render_ency_stats_detail(GameState *gs) {
     }
 
     const char *statDescs[NUM_STATS][3] = {
-        { "Increases physical damage", "+1 max HP per point", "Primary: Warrior" },
+        { "Increases physical damage", "+2 max HP per point", "Primary: Warrior" },
         { "Increases crit and dodge chance", "Increases attack speed", "Primary: Rogue" },
         { "Increases spell damage", "+0.2% XP bonus per point", "Primary: Mage" },
         { "Increases heal power", "Flat DR of WIS*0.15", "Primary: Priest" },
@@ -1276,7 +1276,7 @@ static void render_ency_combat_detail(GameState *gs) {
     case 0: /* Tick System */
         mvwprintw(w, row++, 2, "Combat runs in ticks (timer-based).");
         mvwprintw(w, row++, 2, "Each tick: cooldowns, buffs, skills, attack.");
-        mvwprintw(w, row++, 2, "Tick rate: 300 + 500/(1 + SPD*0.02) ms");
+        mvwprintw(w, row++, 2, "Tick rate: 150 + 650/(1 + SPD*0.02) ms");
         mvwprintw(w, row++, 2, "Higher SPD = faster ticks = more DPS.");
         break;
     case 1: /* Hero Damage — condense to 4 lines (wEnemy has 4 content rows) */
@@ -1292,7 +1292,7 @@ static void render_ency_combat_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "Some skills ignore armor entirely.");
         break;
     case 3: /* Critical Hits */
-        mvwprintw(w, row++, 2, "Crit chance: AGI / 200 (max 50%%)");
+        mvwprintw(w, row++, 2, "Crit chance: AGI / 300 (max 50%%)");
         mvwprintw(w, row++, 2, "Crit multiplier: 1.5x (Rogue: 1.8x)");
         mvwprintw(w, row++, 2, "Buff critDmgBonus stacks additively.");
         mvwprintw(w, row++, 2, "Crit check happens after dmg variance.");
@@ -1311,7 +1311,7 @@ static void render_ency_combat_detail(GameState *gs) {
         break;
     case 6: /* Damage Reduction */
         mvwprintw(w, row++, 2, "%% DR: DEF / (DEF + 100) (max 50%%)");
-        mvwprintw(w, row++, 2, "Flat DR: WIS * 0.15 * (1+Lv/30)");
+        mvwprintw(w, row++, 2, "Flat DR: WIS * 0.15");
         mvwprintw(w, row++, 2, "Applied before block, after variance.");
         mvwprintw(w, row++, 2, "Both stack (%% first, flat second).");
         break;
@@ -1721,7 +1721,7 @@ static void render_skills(GameState *gs) {
     wattron(w, COLOR_PAIR(CP_CYAN));
     mvwprintw(w, PANEL_H - 3, 2, "[Enter] Choose");
     if (hasAny) {
-        int resetCost = gs->hero.level * 50;
+        int resetCost = gs->hero.level * gs->hero.level * 2;
         int canReset = gs->hero.gold >= resetCost;
         wattroff(w, COLOR_PAIR(CP_CYAN));
         wattron(w, COLOR_PAIR(canReset ? CP_CYAN : CP_RED));
@@ -2274,7 +2274,7 @@ void ui_handle_key(GameState *gs, int ch) {
             int hasAny = 0;
             for (int t = 0; t < MAX_SKILL_TIERS; t++)
                 if (gs->hero.skillChoices[t] >= 0) { hasAny = 1; break; }
-            int resetCost = gs->hero.level * 50;
+            int resetCost = gs->hero.level * gs->hero.level * 2;
             if (hasAny && gs->hero.gold >= resetCost) {
                 gs->hero.gold -= resetCost;
                 for (int t = 0; t < MAX_SKILL_TIERS; t++)

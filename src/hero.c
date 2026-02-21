@@ -49,9 +49,9 @@ Hero hero_create(int classId, const char *name) {
  *   1. For each stat: base + soft-capped talents + equipment sum
  *      Soft cap: past 30 pts, overflow is halved via integer division.
  *   2. Primary-stat-based damage (class-specific: mage INT*1.5+WIS*0.5, priest WIS*1.2+INT*0.5, rogue AGI*1.4+STR*0.4)
- *   3. Derived rates: crit (AGI/200), dodge (AGI/300), block (DEF/250, warrior only),
- *      DR (DEF/(DEF+100)), tick rate (asymptotic 300+500/(1+SPD*0.02)),
- *      XP multiplier (1 + INT*0.005), flat damage reduce (WIS*0.15 scaled by level)
+ *   3. Derived rates: crit (AGI/300), dodge (AGI/300), block (DEF/250, warrior only),
+ *      DR (DEF/(DEF+100)), tick rate (asymptotic 150+650/(1+SPD*0.02)),
+ *      XP multiplier (1 + min(INT*0.005, 0.50)), flat damage reduce (WIS*0.15)
  */
 EStats hero_effective_stats(const Hero *h) {
     EStats es;
@@ -71,18 +71,18 @@ EStats hero_effective_stats(const Hero *h) {
     }
 
     int pri = es.stats[cd->primaryStat];
-    es.maxHp = cd->baseHp + es.stats[VIT] * 5 + es.stats[STR];
+    es.maxHp = cd->baseHp + es.stats[VIT] * 5 + es.stats[STR] * 2;
     es.damage = (int)(pri * 1.5f + es.stats[STR] * 0.3f);
-    es.critChance = fminf(0.50f, es.stats[AGI] / 200.0f);
+    es.critChance = fminf(0.50f, es.stats[AGI] / 300.0f);
     es.critMult   = 1.5f;
     es.dodgeChance = fminf(0.35f, es.stats[AGI] / 300.0f);
     es.blockChance = (h->classId == CLASS_WARRIOR) ? fminf(0.30f, es.stats[DEF] / 250.0f) : 0;
     es.blockReduction = 0.30f;
     es.dmgReduction   = fminf(0.50f, es.stats[DEF] / (es.stats[DEF] + 100.0f));
-    es.tickRate = 300 + (int)(500.0f / (1.0f + es.stats[SPD] * 0.02f));
+    es.tickRate = 150 + (int)(650.0f / (1.0f + es.stats[SPD] * 0.02f));
     es.healPower = 0;
-    es.xpMultiplier = 1.0f + es.stats[INT_] * 0.005f;
-    es.flatDmgReduce = (int)(es.stats[WIS] * 0.15f * (1.0f + h->level / 30.0f));
+    es.xpMultiplier = 1.0f + fminf(0.50f, es.stats[INT_] * 0.005f);
+    es.flatDmgReduce = (int)(es.stats[WIS] * 0.15f);
 
     switch (h->classId) {
     case CLASS_MAGE:
@@ -102,9 +102,10 @@ EStats hero_effective_stats(const Hero *h) {
     return es;
 }
 
-/* Quadratic XP curve: scales smoothly — level 1 needs 75, level 50 needs 12,550, level 90 needs 40,550. */
+/* Quadratic + cubic XP curve: early levels are quick, late levels are grindy.
+ * Lv10: 850, Lv50: 50,050, Lv90: 259,250. Total 1→99 ≈ 8.7M XP. */
 int hero_xp_needed(int level) {
-    return 5 * level * level + 50;
+    return 5 * level * level + (int)(0.3f * level * level * level) + 50;
 }
 
 float hero_xp_pct(const Hero *h) {
