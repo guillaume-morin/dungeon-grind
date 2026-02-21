@@ -460,6 +460,40 @@ static void render_equipment(GameState *gs) {
     wnoutrefresh(w);
 }
 
+#define NUM_SHOP_TIERS 9
+static const struct { int level; int rarity; } SHOP_TIERS[NUM_SHOP_TIERS] = {
+    {1, RARITY_COMMON}, {8, RARITY_UNCOMMON},
+    {18, RARITY_RARE}, {32, RARITY_RARE}, {40, RARITY_RARE},
+    {46, RARITY_EPIC}, {55, RARITY_EPIC}, {66, RARITY_EPIC}, {78, RARITY_EPIC}
+};
+
+static int shop_item_count(GameState *gs) {
+    (void)gs;
+    return NUM_SHOP_TIERS;
+}
+
+static void shop_get_item(GameState *gs, int idx, ItemDef *out) {
+    memset(out, 0, sizeof(ItemDef));
+    if (idx < 0 || idx >= NUM_SHOP_TIERS) return;
+    int lvl = SHOP_TIERS[idx].level;
+    int rar = SHOP_TIERS[idx].rarity;
+    
+    if (rar <= RARITY_RARE) {
+        data_shop_item(out, gs->shopSlot, lvl, gs->hero.classId);
+    } else {
+        int classMask = (1 << gs->hero.classId);
+        for (int i = 0; i < data_num_items(); i++) {
+            const ItemDef *it = data_item(i);
+            if (it->slot == gs->shopSlot && it->rarity == rar && it->levelReq == lvl &&
+                (it->classMask == 0 || (it->classMask & classMask))) {
+                *out = *it;
+                return;
+            }
+        }
+        data_shop_item(out, gs->shopSlot, lvl, gs->hero.classId);
+    }
+}
+
 static void render_shop(GameState *gs) {
     WINDOW *w = gs->wLeft;
     werase(w);
@@ -471,34 +505,26 @@ static void render_shop(GameState *gs) {
     mvwprintw(w, 1, 2, "Shop  Gold:%d", gs->hero.gold);
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
-    int slotFilter = gs->shopSlot;
     wattron(w, COLOR_PAIR(CP_WHITE));
-    mvwprintw(w, 2, 2, "<%s>", data_slot_name(slotFilter));
+    mvwprintw(w, 2, 2, "<%s>", data_slot_name(gs->shopSlot));
     mvwprintw(w, 2, 16, "[</>]");
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
-    int classMask = (1 << gs->hero.classId);
-    int shown[50], nShown = 0;
-    for (int i = 0; i < data_num_items(); i++) {
-        const ItemDef *it = data_item(i);
-        if (it->slot != slotFilter) continue;
-        if (it->classMask != 0 && !(it->classMask & classMask)) continue;
-        if (nShown < 50) shown[nShown++] = i;
-    }
-
-    int maxShow = PANEL_H - 7;
     int row = 4;
-    for (int i = 0; i < nShown && i < maxShow; i++) {
-        const ItemDef *it = data_item(shown[i]);
+    for (int i = 0; i < NUM_SHOP_TIERS; i++) {
+        ItemDef it;
+        shop_get_item(gs, i, &it);
+        if (it.name[0] == '\0') continue;
+        
         int sel = (i == gs->menuIdx);
-        int canBuy = (gs->hero.gold >= it->price && gs->hero.level >= it->levelReq);
-        int rc = data_rarity_color(it->rarity);
+        int canBuy = (gs->hero.gold >= it.price && gs->hero.level >= it.levelReq);
+        int rc = data_rarity_color(it.rarity);
 
         if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
         else     wattron(w, COLOR_PAIR(canBuy ? rc : CP_RED));
 
         mvwprintw(w, row, 1, "%s%-16.16s %4dg",
-                  sel ? ">" : " ", it->name, it->price);
+                  sel ? ">" : " ", it.name, it.price);
 
         if (sel) wattroff(w, COLOR_PAIR(CP_SELECTED));
         else     wattroff(w, COLOR_PAIR(canBuy ? rc : CP_RED));
@@ -1363,9 +1389,6 @@ static void render_ency_combat_detail(GameState *gs) {
     wnoutrefresh(w);
 }
 
-static int shop_item_count(GameState *gs);
-static const ItemDef *shop_item_at(GameState *gs, int idx);
-
 /* Return the item currently highlighted in the equipment screen (equipped slot or bag item). */
 static const ItemDef *equip_highlighted(const GameState *gs) {
     if (gs->menuIdx < NUM_SLOTS) {
@@ -1761,14 +1784,22 @@ static void render_enemy_panel(GameState *gs) {
         return;
     }
     if (gs->screen == SCR_SHOP) {
-        const ItemDef *it = shop_item_at(gs, gs->menuIdx);
+        ItemDef it;
+        shop_get_item(gs, gs->menuIdx, &it);
         const ItemDef *cmp = NULL;
-        if (it) {
-            int slot = it->slot;
+        if (it.name[0] != '\0') {
+            int slot = it.slot;
             if (gs->hero.hasEquip[slot])
                 cmp = &gs->hero.equipment[slot];
+            render_item_detail(gs, &it, cmp);
+        } else {
+            WINDOW *w = gs->wEnemy;
+            werase(w);
+            wattron(w, COLOR_PAIR(CP_BORDER));
+            box(w, 0, 0);
+            wattroff(w, COLOR_PAIR(CP_BORDER));
+            wnoutrefresh(w);
         }
-        render_item_detail(gs, it, cmp);
         return;
     }
     if (gs->screen == SCR_CLASS_SELECT) {
@@ -1929,35 +1960,6 @@ void ui_render(GameState *gs) {
     render_enemy_panel(gs);
     render_log_panel(gs);
     doupdate();
-}
-
-/* Count items available in the shop for the current slot filter and hero class. */
-static int shop_item_count(GameState *gs) {
-    int slotFilter = gs->shopSlot;
-    int classMask = (1 << gs->hero.classId);
-    int n = 0;
-    for (int i = 0; i < data_num_items(); i++) {
-        const ItemDef *it = data_item(i);
-        if (it->slot != slotFilter) continue;
-        if (it->classMask != 0 && !(it->classMask & classMask)) continue;
-        n++;
-    }
-    return n;
-}
-
-/* Return the idx-th item matching the current shop slot filter and hero class. */
-static const ItemDef *shop_item_at(GameState *gs, int idx) {
-    int slotFilter = gs->shopSlot;
-    int classMask = (1 << gs->hero.classId);
-    int n = 0;
-    for (int i = 0; i < data_num_items(); i++) {
-        const ItemDef *it = data_item(i);
-        if (it->slot != slotFilter) continue;
-        if (it->classMask != 0 && !(it->classMask & classMask)) continue;
-        if (n == idx) return it;
-        n++;
-    }
-    return NULL;
 }
 
 /*
@@ -2200,32 +2202,30 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_LEFT  || ch == 'a') { gs->shopSlot--; if (gs->shopSlot < 0) gs->shopSlot = NUM_SLOTS - 1; gs->menuIdx = 0; }
         if (ch == KEY_RIGHT || ch == 'd') { gs->shopSlot++; if (gs->shopSlot >= NUM_SLOTS) gs->shopSlot = 0; gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
-            const ItemDef *it = shop_item_at(gs, gs->menuIdx);
-            if (it && gs->hero.gold >= it->price && gs->hero.level >= it->levelReq) {
-                if (hero_equip(&gs->hero, it)) {
-                    gs->hero.gold -= it->price;
+            ItemDef it;
+            shop_get_item(gs, gs->menuIdx, &it);
+            if (it.name[0] != '\0' && gs->hero.gold >= it.price && gs->hero.level >= it.levelReq) {
+                if (hero_equip(&gs->hero, &it)) {
+                    gs->hero.gold -= it.price;
                     char b[LOG_LINE_W + 1];
-                    snprintf(b, sizeof(b), "Bought %s!", it->name);
-                    ui_log(gs, b, data_rarity_color(it->rarity));
+                    snprintf(b, sizeof(b), "Bought %s!", it.name);
+                    ui_log(gs, b, data_rarity_color(it.rarity));
                 } else if (gs->hero.invCount >= MAX_INVENTORY &&
-                           gs->hero.hasEquip[it->slot]) {
-                    /* Swap-sell: sell old equipped item, then equip new */
-                    ItemDef old = gs->hero.equipment[it->slot];
+                           gs->hero.hasEquip[it.slot]) {
+                    ItemDef old = gs->hero.equipment[it.slot];
                     int sellBack = old.price / 2;
                     if (sellBack < 1) sellBack = 1;
-                    /* Temporarily free the slot so hero_equip won't need inventory */
-                    gs->hero.hasEquip[it->slot] = 0;
-                    if (hero_equip(&gs->hero, it)) {
-                        gs->hero.gold -= it->price;
+                    gs->hero.hasEquip[it.slot] = 0;
+                    if (hero_equip(&gs->hero, &it)) {
+                        gs->hero.gold -= it.price;
                         gs->hero.gold += sellBack;
                         char b[LOG_LINE_W + 1];
                         snprintf(b, sizeof(b), "Sold %s (%dg), bought %s!",
-                                 old.name, sellBack, it->name);
-                        ui_log(gs, b, data_rarity_color(it->rarity));
+                                 old.name, sellBack, it.name);
+                        ui_log(gs, b, data_rarity_color(it.rarity));
                     } else {
-                        /* Restore slot on failure */
-                        gs->hero.equipment[it->slot] = old;
-                        gs->hero.hasEquip[it->slot] = 1;
+                        gs->hero.equipment[it.slot] = old;
+                        gs->hero.hasEquip[it.slot] = 1;
                         ui_log(gs, "Can't equip that.", CP_RED);
                     }
                 } else {

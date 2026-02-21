@@ -26,7 +26,7 @@
 #endif
 
 #define SAVE_MAGIC  0x44475256  /* "DGRV" */
-#define SAVE_VER    5
+#define SAVE_VER    6
 
 /* Return platform-specific save directory: ~/.dungeon-grind or %APPDATA%\.dungeon-grind. */
 static const char *save_dir(void) {

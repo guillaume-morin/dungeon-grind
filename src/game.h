@@ -359,8 +359,14 @@ const char         *data_rarity_name(int r);
 int                 data_rarity_color(int r);
 const char         *data_slot_name(int s);
 int                 data_num_enemies(void);
-/* Pick a random item within level range, class, and rarity cap. NULL if none. */
+/* Pick a random item within level range, class, and rarity cap. NULL if none.
+ * Only searches static items (Epic/Legendary). For Common-Rare, use data_generate_item. */
 const ItemDef      *data_random_drop(int minLvl, int maxLvl, int classMask, int maxRarity);
+/* Procedurally generate a Common/Uncommon/Rare item with WoW-style animal suffix.
+ * Fills *out with name, stats, price, classMask. Rarity must be <= RARITY_RARE. */
+void                data_generate_item(ItemDef *out, int slot, int rarity, int level, int classId);
+/* Generate a deterministic shop item (class-optimal suffix, 2x price). */
+void                data_shop_item(ItemDef *out, int slot, int level, int classId);
 /* Get a specific skill definition: SKILLS[classId][tier][option]. */
 const SkillDef     *data_skill(int classId, int tier, int option);
 /* Required hero level for the given skill tier (10, 20, 30, 40, 50, 60). */

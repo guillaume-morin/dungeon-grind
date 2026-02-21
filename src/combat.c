@@ -143,82 +143,90 @@ static const int MOB_MAX_RARITY[NUM_DUNGEONS] = {
 
 /*
  * Boss guaranteed drop with weighted rarity selection.
- * Algorithm: bucket all eligible items (level range + class + rarity cap) by rarity,
- * then pick a rarity tier using RARITY_WEIGHTS {50,30,12,6,2} — Common is 25× more
- * likely than Legendary. Finally pick a random item from the chosen rarity bucket.
+ * Uses procedural generation for Common-Rare, static ITEMS[] for Epic-Legendary.
+ * RARITY_WEIGHTS {50,30,12,6,2} make Common 25× more likely than Legendary.
  * Boss rarity cap = dungeon's mob cap + 1 (bosses can drop one tier higher).
  */
 static void try_boss_loot(GameState *gs) {
     Hero *h = &gs->hero;
     if (h->invCount >= MAX_INVENTORY) return;
-
     const DungeonDef *dg = data_dungeon(gs->currentDungeon);
     if (!dg) return;
 
     int classMask = (1 << h->classId);
-    int minLvl = dg->levelReq;
-    int maxLvl = dg->levelReq + 20;
     int bossMaxRar = MOB_MAX_RARITY[gs->currentDungeon] + 1;
     if (bossMaxRar > RARITY_LEGENDARY) bossMaxRar = RARITY_LEGENDARY;
 
-    int byRarity[NUM_RARITIES][256];
-    int nByRarity[NUM_RARITIES];
-    for (int r = 0; r < NUM_RARITIES; r++) nByRarity[r] = 0;
-
+    int hasRarity[NUM_RARITIES] = {0};
+    for (int r = 0; r <= RARITY_RARE && r <= bossMaxRar; r++)
+        hasRarity[r] = 1;
     for (int i = 0; i < data_num_items(); i++) {
         const ItemDef *it = data_item(i);
-        if (it->levelReq >= minLvl && it->levelReq <= maxLvl &&
+        if (it->levelReq >= dg->levelReq && it->levelReq <= dg->levelReq + 20 &&
             it->rarity <= bossMaxRar &&
-            (it->classMask == 0 || (it->classMask & classMask))) {
-            int r = it->rarity;
-            if (r >= 0 && r < NUM_RARITIES && nByRarity[r] < 256)
-                byRarity[r][nByRarity[r]++] = i;
-        }
+            (it->classMask == 0 || (it->classMask & classMask)))
+            hasRarity[it->rarity] = 1;
     }
 
     static const int RARITY_WEIGHTS[NUM_RARITIES] = { 50, 30, 12, 6, 2 };
     int totalWeight = 0;
-    for (int r = 0; r < NUM_RARITIES; r++) {
-        if (nByRarity[r] > 0) totalWeight += RARITY_WEIGHTS[r];
-    }
+    for (int r = 0; r < NUM_RARITIES; r++)
+        if (r <= bossMaxRar && hasRarity[r]) totalWeight += RARITY_WEIGHTS[r];
     if (totalWeight == 0) return;
 
     int roll = rand() % totalWeight;
-    int chosenRarity = 0;
-    int accum = 0;
+    int chosenRarity = 0, accum = 0;
     for (int r = 0; r < NUM_RARITIES; r++) {
-        if (nByRarity[r] == 0) continue;
+        if (r > bossMaxRar || !hasRarity[r]) continue;
         accum += RARITY_WEIGHTS[r];
         if (roll < accum) { chosenRarity = r; break; }
     }
 
-    int idx = byRarity[chosenRarity][rand() % nByRarity[chosenRarity]];
-    const ItemDef *drop = data_item(idx);
-    h->inventory[h->invCount++] = *drop;
+    ItemDef drop;
+    if (chosenRarity <= RARITY_RARE) {
+        int slot = rand() % NUM_SLOTS;
+        data_generate_item(&drop, slot, chosenRarity, dg->levelReq, h->classId);
+    } else {
+        int candidates[256];
+        int nc = 0;
+        for (int i = 0; i < data_num_items(); i++) {
+            const ItemDef *it = data_item(i);
+            if (it->rarity == chosenRarity &&
+                it->levelReq >= dg->levelReq && it->levelReq <= dg->levelReq + 20 &&
+                (it->classMask == 0 || (it->classMask & classMask)))
+                candidates[nc++] = i;
+        }
+        if (nc == 0) return;
+        drop = *data_item(candidates[rand() % nc]);
+    }
+
+    h->inventory[h->invCount++] = drop;
     char buf[LOG_LINE_W + 1];
-    snprintf(buf, sizeof(buf), "[BOSS LOOT] %s!", drop->name);
-    ui_log(gs, buf, data_rarity_color(drop->rarity));
+    snprintf(buf, sizeof(buf), "[BOSS LOOT] %s!", drop.name);
+    ui_log(gs, buf, data_rarity_color(drop.rarity));
 }
 
-/* Normal mob loot: roll against enemy's dropChance, then pick random item within dungeon rarity cap. */
+/* Normal mob loot: roll against enemy's dropChance, then generate procedural item. */
 static void try_loot_drop(GameState *gs) {
     Hero *h = &gs->hero;
     Enemy *e = &gs->enemy;
     if (randf() >= e->dropChance) return;
+    if (h->invCount >= MAX_INVENTORY) return;
 
     const DungeonDef *dg = data_dungeon(gs->currentDungeon);
     if (!dg) return;
 
-    int classMask = (1 << h->classId);
     int maxRar = MOB_MAX_RARITY[gs->currentDungeon];
-    const ItemDef *drop = data_random_drop(dg->levelReq, dg->levelReq + 15, classMask, maxRar);
-    if (!drop) return;
-    if (h->invCount >= MAX_INVENTORY) return;
-
-    h->inventory[h->invCount++] = *drop;
+    int rarity = rand() % (maxRar + 1);
+    int slot = rand() % NUM_SLOTS;
+    
+    ItemDef drop;
+    data_generate_item(&drop, slot, rarity, dg->levelReq, h->classId);
+    
+    h->inventory[h->invCount++] = drop;
     char buf[LOG_LINE_W + 1];
-    snprintf(buf, sizeof(buf), "[LOOT] %s!", drop->name);
-    ui_log(gs, buf, data_rarity_color(drop->rarity));
+    snprintf(buf, sizeof(buf), "[LOOT] %s!", drop.name);
+    ui_log(gs, buf, data_rarity_color(drop.rarity));
 }
 
 /*
