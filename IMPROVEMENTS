@@ -40,7 +40,7 @@ loot RNG. Recipes discovered in dungeons or from boss kills.
 
 
 ────────────────────────────────────────────────────────────
-#5  Achievement System                                    [SELECTED]
+#5  Achievement System                                    [DONE]
 ────────────────────────────────────────────────────────────
 Track milestones (first boss kill, 1000 kills, max level, full legendary
 set). Achievements grant small permanent bonuses. Bitfield storage in Hero,
@@ -49,7 +49,7 @@ sub-screen to view progress.
 
 
 ────────────────────────────────────────────────────────────
-#6  Dungeon Hard Mode with Affixes                        [SELECTED]
+#6  Dungeon Hard Mode with Affixes                        [DONE]
 ────────────────────────────────────────────────────────────
 After clearing a dungeon (beating boss), unlock hard mode with random affixes
 (enemies +30% HP, hero -20% healing, bosses enrage after 60s). Better loot
@@ -65,7 +65,7 @@ Adds build diversity without touching the active skill system.
 
 
 ────────────────────────────────────────────────────────────
-#8  Combat Log DPS/HPS Tracking                           [SELECTED]
+#8  Combat Log DPS/HPS Tracking                           [DONE]
 ────────────────────────────────────────────────────────────
 Track total damage dealt, taken, healed, and ticks elapsed during combat.
 Display DPS/HPS in the combat log or enemy panel. Counters in GameState,
@@ -73,7 +73,7 @@ no save changes needed. Helps players evaluate builds quantitatively.
 
 
 ────────────────────────────────────────────────────────────
-#9  Rare Elite Enemy Encounters                           [SELECTED]
+#9  Rare Elite Enemy Encounters                           [DONE]
 ────────────────────────────────────────────────────────────
 5% chance on spawn to create elite variant (golden name, 3x stats, guaranteed
 rare+ drop). Flag in GameState, minor changes to combat_spawn. Adds exciting
@@ -81,7 +81,7 @@ moments to the grind loop.
 
 
 ────────────────────────────────────────────────────────────
-#10  Cosmetic Title System                                [SELECTED]
+#10  Cosmetic Title System                                [DONE]
 ────────────────────────────────────────────────────────────
 Earn titles from achievements and boss kills. Stored in Hero, displayed in
 header bar. Title selection UI. Pure cosmetic reward that signals progression.

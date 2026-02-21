@@ -107,11 +107,26 @@ static void render_header(GameState *gs) {
     } else {
         const ClassDef *cd = data_class(gs->hero.classId);
         const char *dname = "Town";
+        char dnameBuf[48];
         if (gs->inDungeon) {
             const DungeonDef *dg = data_dungeon(gs->currentDungeon);
-            if (dg) dname = dg->name;
+            if (dg) {
+                if (gs->hardModeActive)
+                    snprintf(dnameBuf, sizeof(dnameBuf), "%s (Hard)", dg->name);
+                else
+                    snprintf(dnameBuf, sizeof(dnameBuf), "%s", dg->name);
+                dname = dnameBuf;
+            }
         }
-        mvwprintw(w, 0, 1, " %s (%s) Lv.%d ", gs->hero.name, cd->name, gs->hero.level);
+        if (gs->hero.activeTitle > 0 && gs->hero.activeTitle <= NUM_TITLES) {
+            const TitleDef *td = data_title(gs->hero.activeTitle - 1);
+            if (td)
+                mvwprintw(w, 0, 1, " %s %s Lv.%d ", gs->hero.name, td->name, gs->hero.level);
+            else
+                mvwprintw(w, 0, 1, " %s (%s) Lv.%d ", gs->hero.name, cd->name, gs->hero.level);
+        } else {
+            mvwprintw(w, 0, 1, " %s (%s) Lv.%d ", gs->hero.name, cd->name, gs->hero.level);
+        }
         mvwprintw(w, 0, SCREEN_W - (int)strlen(dname) - 3, " %s ", dname);
         if (gs->paused) {
             mvwprintw(w, 0, SCREEN_W / 2 - 4, "[PAUSED]");
@@ -347,11 +362,18 @@ static void render_dungeon_select(GameState *gs) {
         wattroff(w, COLOR_PAIR(CP_GREEN));
     }
 
+    if (gs->wantHardMode) {
+        wattron(w, COLOR_PAIR(CP_MAGENTA));
+        mvwprintw(w, 2, 16, "[HARD]");
+        wattroff(w, COLOR_PAIR(CP_MAGENTA));
+    }
+
     int row = 4;
     for (int i = 0; i < NUM_DUNGEONS; i++) {
         const DungeonDef *dg = data_dungeon(i);
         int unlocked = gs->hero.level >= dg->levelReq;
         int cur = (gs->inDungeon && gs->currentDungeon == i);
+        int hm = gs->hero.hardMode[i];
 
         if (i == gs->menuIdx) {
             wattron(w, COLOR_PAIR(CP_SELECTED));
@@ -365,6 +387,11 @@ static void render_dungeon_select(GameState *gs) {
             wattron(w, COLOR_PAIR(cur ? CP_GREEN : CP_DEFAULT));
             mvwprintw(w, row, 1, "   %-23.23s", dg->name);
             wattroff(w, COLOR_PAIR(cur ? CP_GREEN : CP_DEFAULT));
+        }
+        if (hm && unlocked) {
+            wattron(w, COLOR_PAIR(CP_MAGENTA));
+            mvwprintw(w, row, LEFT_W - 4, "H");
+            wattroff(w, COLOR_PAIR(CP_MAGENTA));
         }
         row++;
     }
@@ -384,6 +411,7 @@ static void render_dungeon_select(GameState *gs) {
     }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
+    mvwprintw(w, PANEL_H - 3, 2, "[H] Hard Mode");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
@@ -679,7 +707,8 @@ static void render_character(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_GREEN));
 
     wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 3, 2, "[Enter] +1 Talent");
+    mvwprintw(w, PANEL_H - 4, 2, "[Enter] +1 Talent");
+    mvwprintw(w, PANEL_H - 3, 2, "[T] Titles");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
@@ -761,8 +790,8 @@ static void render_encyclopedia(GameState *gs) {
     mvwprintw(w, 1, 2, "Encyclopedia");
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
-    const char *categories[] = { "Classes", "Skills", "Stats", "Items", "Dungeons", "Enemies", "Bosses", "Combat" };
-    for (int i = 0; i < 8; i++) {
+    const char *categories[] = { "Classes", "Skills", "Stats", "Items", "Dungeons", "Enemies", "Bosses", "Combat", "Achievements" };
+    for (int i = 0; i < 9; i++) {
         if (i == gs->menuIdx) {
             wattron(w, COLOR_PAIR(CP_SELECTED));
             mvwprintw(w, 3 + i, 1, " > %-23s", categories[i]);
@@ -795,10 +824,11 @@ static void render_encyclopedia_detail(GameState *gs) {
         "Explore dungeons and their inhabitants.",
         "Study the creatures in each dungeon.",
         "Face the guardians that rule each dungeon.",
-        "How damage, ticks, and combat mechanics work."
+        "How damage, ticks, and combat mechanics work.",
+        "View milestones and their permanent bonuses."
     };
 
-    if (gs->menuIdx >= 0 && gs->menuIdx < 8) {
+    if (gs->menuIdx >= 0 && gs->menuIdx < 9) {
         wattron(w, COLOR_PAIR(CP_WHITE));
         mvwprintw(w, 2, 2, "%s", descriptions[gs->menuIdx]);
         wattroff(w, COLOR_PAIR(CP_WHITE));
@@ -1832,13 +1862,136 @@ static void render_skills(GameState *gs) {
     wnoutrefresh(w);
 }
 
-/*
- * Context-sensitive right panel dispatcher. Routes to different detail renderers
- * based on the current screen: item stats (equipment/shop/encyclopedia), stat
- * preview (character), skill detail (skills), encyclopedia entries, or the
- * default enemy display with ASCII art and HP bar during combat.
- */
+static void render_achievements(GameState *gs) {
+    WINDOW *w = gs->wLeft;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+    mvwprintw(w, 1, 2, "Achievements");
+    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+    int maxRows = PANEL_H - 5;
+    int scroll = 0;
+    if (gs->menuIdx >= maxRows) scroll = gs->menuIdx - maxRows + 1;
+
+    int row = 3;
+    for (int i = 0; i < NUM_ACHIEVEMENTS && (i - scroll) < maxRows; i++) {
+        if (i < scroll) continue;
+        const AchievementDef *ad = data_achievement(i);
+        int has = ACH_HAS(&gs->hero, i);
+        int sel = (i == gs->menuIdx);
+
+        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        else if (has) wattron(w, COLOR_PAIR(CP_GREEN));
+        else wattron(w, COLOR_PAIR(CP_DEFAULT));
+
+        mvwprintw(w, row, 1, "%s%c %-21.21s",
+                  sel ? " > " : "   ",
+                  has ? '*' : ' ',
+                  ad->name);
+
+        wattroff(w, COLOR_PAIR(CP_SELECTED));
+        wattroff(w, COLOR_PAIR(CP_GREEN));
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        row++;
+    }
+
+    wattron(w, COLOR_PAIR(CP_CYAN));
+    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
+    wattroff(w, COLOR_PAIR(CP_CYAN));
+    wnoutrefresh(w);
+}
+
+static void render_achievement_detail(GameState *gs) {
+    WINDOW *w = gs->wEnemy;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    if (gs->menuIdx < 0 || gs->menuIdx >= NUM_ACHIEVEMENTS) {
+        wnoutrefresh(w);
+        return;
+    }
+
+    const AchievementDef *ad = data_achievement(gs->menuIdx);
+    int has = ACH_HAS(&gs->hero, gs->menuIdx);
+
+    wattron(w, COLOR_PAIR(has ? CP_GREEN : CP_YELLOW) | A_BOLD);
+    mvwprintw(w, 1, 2, "%s %s", has ? "[*]" : "[ ]", ad->name);
+    wattroff(w, COLOR_PAIR(has ? CP_GREEN : CP_YELLOW) | A_BOLD);
+
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, 3, 2, "%s", ad->description);
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+    const char *bonusNames[] = { "Max HP", "Damage", "XP" };
+    const char *bonusFmt[]   = { "+%d HP", "+%d%% DMG", "+%d%% XP" };
+    wattron(w, COLOR_PAIR(CP_CYAN));
+    char bonusBuf[32];
+    snprintf(bonusBuf, sizeof(bonusBuf), bonusFmt[ad->bonusType], ad->bonusValue);
+    mvwprintw(w, 5, 2, "Bonus: %s (%s)", bonusBuf, bonusNames[ad->bonusType]);
+    wattroff(w, COLOR_PAIR(CP_CYAN));
+
+    wnoutrefresh(w);
+}
+
+static void render_titles(GameState *gs) {
+    WINDOW *w = gs->wLeft;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+    mvwprintw(w, 1, 2, "Titles");
+    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+    int sel = (gs->menuIdx == 0);
+    if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+    else wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, 3, 1, "%s(None)%*s",
+              sel ? " > " : "   ", LEFT_W - 12, "");
+    wattroff(w, COLOR_PAIR(CP_SELECTED));
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+    for (int i = 0; i < NUM_TITLES; i++) {
+        const TitleDef *td = data_title(i);
+        int unlocked = (td->achievementIdx >= 0 && ACH_HAS(&gs->hero, td->achievementIdx));
+        int active = (gs->hero.activeTitle == i + 1);
+        sel = (gs->menuIdx == i + 1);
+
+        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        else if (active) wattron(w, COLOR_PAIR(CP_CYAN));
+        else if (unlocked) wattron(w, COLOR_PAIR(CP_GREEN));
+        else wattron(w, COLOR_PAIR(CP_DEFAULT));
+
+        mvwprintw(w, 4 + i, 1, "%s%c %-21.21s",
+                  sel ? " > " : "   ",
+                  active ? '*' : (unlocked ? ' ' : '?'),
+                  unlocked ? td->name : "???");
+
+        wattroff(w, COLOR_PAIR(CP_SELECTED));
+        wattroff(w, COLOR_PAIR(CP_CYAN));
+        wattroff(w, COLOR_PAIR(CP_GREEN));
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    }
+
+    wattron(w, COLOR_PAIR(CP_CYAN));
+    mvwprintw(w, PANEL_H - 3, 2, "[Enter] Select");
+    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
+    wattroff(w, COLOR_PAIR(CP_CYAN));
+    wnoutrefresh(w);
+}
+
 static void render_enemy_panel(GameState *gs) {
+    if (gs->screen == SCR_ACHIEVEMENTS) {
+        render_achievement_detail(gs);
+        return;
+    }
     if (gs->screen == SCR_SKILLS) {
         render_skill_detail(gs);
         return;
@@ -1972,13 +2125,26 @@ static void render_enemy_panel(GameState *gs) {
     }
 
     int barW = RIGHT_W - 6;
-    wattron(w, COLOR_PAIR(CP_WHITE) | A_BOLD);
+    int nameColor = gs->isElite ? CP_YELLOW : (gs->bossActive ? CP_MAGENTA : CP_WHITE);
+    wattron(w, COLOR_PAIR(nameColor) | A_BOLD);
     mvwprintw(w, 6, 2, "%-20s", e->name);
-    wattroff(w, COLOR_PAIR(CP_WHITE) | A_BOLD);
+    wattroff(w, COLOR_PAIR(nameColor) | A_BOLD);
     draw_bar(w, 6, 22, barW - 22, e->hp, e->maxHp, CP_RED, CP_DEFAULT);
     wattron(w, COLOR_PAIR(CP_WHITE));
     mvwprintw(w, 6, barW - 1, "%d/%d", e->hp, e->maxHp);
     wattroff(w, COLOR_PAIR(CP_WHITE));
+
+    if (gs->combatTicks > 0) {
+        EStats ces = hero_effective_stats(&gs->hero);
+        float secs = gs->combatTicks * ces.tickRate / 1000.0f;
+        if (secs > 0.1f) {
+            int dps = (int)(gs->combatDmgDealt / secs);
+            int dtps = (int)(gs->combatDmgTaken / secs);
+            wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, 7, 2, "DPS:%d  DTPS:%d", dps, dtps);
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        }
+    }
 
     wnoutrefresh(w);
 }
@@ -2030,6 +2196,8 @@ void ui_render(GameState *gs) {
     case SCR_ENCY_SKILLS:   render_ency_skills(gs);   break;
     case SCR_ENCY_DUNGEONS: render_ency_dungeons(gs); break;
     case SCR_ENCY_COMBAT:   render_ency_combat(gs);   break;
+    case SCR_ACHIEVEMENTS:  render_achievements(gs);   break;
+    case SCR_TITLES:        render_titles(gs);         break;
     }
 
     render_enemy_panel(gs);
@@ -2143,6 +2311,10 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxIdx; }
         if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > maxIdx) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 0; }
+        if (ch == 'h' || ch == 'H') {
+            if (gs->menuIdx < NUM_DUNGEONS && gs->hero.hardMode[gs->menuIdx])
+                gs->wantHardMode = !gs->wantHardMode;
+        }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->inDungeon && gs->menuIdx == NUM_DUNGEONS) {
                 gs->inDungeon = 0;
@@ -2151,6 +2323,7 @@ void ui_handle_key(GameState *gs, int ch) {
                 gs->dungeonKills = 0;
                 gs->bossActive = 0;
                 gs->bossTimer = 0;
+                gs->hardModeActive = 0;
                 EStats es2 = hero_effective_stats(&gs->hero);
                 gs->hero.hp = es2.maxHp;
                 gs->hero.maxHp = es2.maxHp;
@@ -2168,6 +2341,21 @@ void ui_handle_key(GameState *gs, int ch) {
                     gs->bossActive = 0;
                     gs->bossTimer = 0;
                     gs->hero.numBuffs = 0;
+                    gs->combatDmgDealt = 0;
+                    gs->combatDmgTaken = 0;
+                    gs->combatHealed = 0;
+                    gs->combatTicks = 0;
+                    gs->hardModeActive = (gs->wantHardMode && gs->hero.hardMode[gs->menuIdx]);
+                    if (gs->hardModeActive) {
+                        gs->activeAffixes[0] = rand() % NUM_AFFIXES;
+                        do { gs->activeAffixes[1] = rand() % NUM_AFFIXES; }
+                        while (gs->activeAffixes[1] == gs->activeAffixes[0]);
+                        char b[LOG_LINE_W + 1];
+                        snprintf(b, sizeof(b), "HARD MODE: %s + %s",
+                                 data_affix_name(gs->activeAffixes[0]),
+                                 data_affix_name(gs->activeAffixes[1]));
+                        ui_log(gs, b, CP_MAGENTA);
+                    }
                     EStats es2 = hero_effective_stats(&gs->hero);
                     gs->hero.hp = es2.maxHp;
                     gs->hero.maxHp = es2.maxHp;
@@ -2234,6 +2422,7 @@ void ui_handle_key(GameState *gs, int ch) {
                         char b[LOG_LINE_W + 1];
                         snprintf(b, sizeof(b), "Equipped %s.", tmp.name);
                         ui_log(gs, b, CP_GREEN);
+                        check_achievements(gs);
                         filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
                         viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
                         int newTotal = NUM_SLOTS + viewN;
@@ -2364,8 +2553,10 @@ void ui_handle_key(GameState *gs, int ch) {
                 snprintf(b, sizeof(b), "+1 %s! (%d pts left)",
                          data_stat_name(gs->menuIdx), gs->hero.talentPoints);
                 ui_log(gs, b, CP_GREEN);
+                check_achievements(gs);
             }
         }
+        if (ch == 't' || ch == 'T') { gs->screen = SCR_TITLES; gs->menuIdx = gs->hero.activeTitle; }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 1; }
         break;
 
@@ -2421,8 +2612,8 @@ void ui_handle_key(GameState *gs, int ch) {
         break;
 
     case SCR_ENCYCLOPEDIA:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 7; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 7) gs->menuIdx = 0; }
+        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 8; }
+        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 8) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             switch (gs->menuIdx) {
             case 0: gs->screen = SCR_ENCY_CLASSES;  gs->menuIdx = 0; break;
@@ -2433,6 +2624,7 @@ void ui_handle_key(GameState *gs, int ch) {
             case 5: gs->screen = SCR_ENCY_ENEMIES;  gs->menuIdx = 0; break;
             case 6: gs->screen = SCR_ENCY_BOSSES;   gs->menuIdx = 0; break;
             case 7: gs->screen = SCR_ENCY_COMBAT;   gs->menuIdx = 0; break;
+            case 8: gs->screen = SCR_ACHIEVEMENTS;  gs->menuIdx = 0; break;
             }
         }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 5; }
@@ -2499,6 +2691,35 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
         if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 7; }
+        break;
+    }
+
+    case SCR_ACHIEVEMENTS:
+        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_ACHIEVEMENTS - 1; }
+        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_ACHIEVEMENTS) gs->menuIdx = 0; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 8; }
+        break;
+
+    case SCR_TITLES: {
+        int maxTitle = NUM_TITLES;
+        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxTitle; }
+        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > maxTitle) gs->menuIdx = 0; }
+        if (ch == '\n' || ch == KEY_ENTER) {
+            if (gs->menuIdx == 0) {
+                gs->hero.activeTitle = 0;
+                ui_log(gs, "Title removed.", CP_YELLOW);
+            } else {
+                int tIdx = gs->menuIdx - 1;
+                const TitleDef *td = data_title(tIdx);
+                if (td && td->achievementIdx >= 0 && ACH_HAS(&gs->hero, td->achievementIdx)) {
+                    gs->hero.activeTitle = gs->menuIdx;
+                    char b[LOG_LINE_W + 1];
+                    snprintf(b, sizeof(b), "Title set: %s", td->name);
+                    ui_log(gs, b, CP_CYAN);
+                }
+            }
+        }
+        if (ch == 27) { gs->screen = SCR_CHARACTER; gs->menuIdx = 0; }
         break;
     }
     }
