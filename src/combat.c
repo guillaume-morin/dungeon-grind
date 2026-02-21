@@ -1,0 +1,481 @@
+/*
+ * combat.c — Auto-combat tick loop, skill engine, loot system.
+ *
+ * Key design decisions:
+ *
+ * MOB_MAX_RARITY[] — per-dungeon cap on normal mob drop rarity. Bosses
+ * get +1 tier above the cap. Prevents early dungeons from dropping
+ * endgame gear.
+ *
+ * Boss loot uses weighted rarity selection (RARITY_WEIGHTS), not uniform
+ * random. Common drops are 25× more likely than Legendary.
+ *
+ * apply_skill() is a generic interpreter for SkillDef — it handles damage,
+ * multi-hit, armor ignore, stun, buffs, shields, DoTs, heals, and mana
+ * restore through field checks rather than per-skill code paths.
+ *
+ * The "goto enemy_killed" label exists because skills fire mid-tick before
+ * the normal attack. If a skill kills the enemy, we jump to the kill
+ * reward logic rather than continuing to the normal attack.
+ *
+ * Absorb shields (shieldHp on Buff) are checked before HP damage in the
+ * enemy attack resolution. Multiple shields stack and drain in order.
+ *
+ * Gold gain is divided by 4 with a floor of 1 to slow economy progression.
+ */
+#include "game.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+static float randf(void) { return (float)rand() / RAND_MAX; }
+
+static int dmg_variance(int base) {
+    int var = (int)(base * 0.1f);
+    if (var < 1) var = 1;
+    return base + (rand() % (var * 2 + 1)) - var;
+}
+
+void combat_spawn(GameState *gs) {
+    const DungeonDef *dg = data_dungeon(gs->currentDungeon);
+    if (!dg) return;
+
+    int pick;
+    int isBoss = (gs->dungeonKills >= BOSS_THRESHOLD);
+
+    if (isBoss) {
+        pick = dg->bossIdx;
+        gs->bossActive = 1;
+    } else {
+        pick = dg->enemyIdx[rand() % dg->numEnemies];
+        gs->bossActive = 0;
+    }
+
+    const EnemyTemplate *et = data_enemy(pick);
+    if (!et) return;
+
+    Enemy *e = &gs->enemy;
+    strncpy(e->name, et->name, MAX_NAME - 1);
+    e->templateIdx = pick;
+    e->maxHp     = et->hp;
+    e->hp        = e->maxHp;
+    e->attack    = et->attack;
+    e->defense   = et->defense;
+    e->speed     = et->speed;
+    e->xpReward  = et->xpReward;
+    e->goldReward= et->goldReward;
+    e->dropChance= et->dropChance;
+    e->stunned   = 0;
+    e->slowed    = 0;
+    gs->hasEnemy = 1;
+
+    char buf[LOG_LINE_W + 1];
+    if (isBoss) {
+        snprintf(buf, sizeof(buf), "*** BOSS: %s *** (HP:%d)", e->name, e->maxHp);
+        ui_log(gs, buf, CP_YELLOW);
+    } else {
+        snprintf(buf, sizeof(buf), "A %s appears! (HP:%d)", e->name, e->maxHp);
+        ui_log(gs, buf, CP_WHITE);
+    }
+}
+
+void combat_tick_buffs(GameState *gs) {
+    Hero *h = &gs->hero;
+    for (int i = h->numBuffs - 1; i >= 0; i--) {
+        Buff *b = &h->buffs[i];
+        if (b->healPerTick > 0) {
+            hero_heal(h, b->healPerTick);
+        }
+        if (b->dmgPerTick > 0 && gs->hasEnemy) {
+            gs->enemy.hp -= b->dmgPerTick;
+        }
+        b->ticksLeft--;
+        if (b->ticksLeft <= 0) {
+            for (int j = i; j < h->numBuffs - 1; j++)
+                h->buffs[j] = h->buffs[j + 1];
+            h->numBuffs--;
+        }
+    }
+}
+
+static int has_buff_flag(const Hero *h, int checkImmune, int checkManaShield, int checkDodge, int checkDoubleDmg) {
+    for (int i = 0; i < h->numBuffs; i++) {
+        if (checkImmune    && h->buffs[i].immune)      return 1;
+        if (checkManaShield&& h->buffs[i].manaShield)  return 1;
+        if (checkDodge     && h->buffs[i].dodgeNext)   return 1;
+        if (checkDoubleDmg && h->buffs[i].doubleDmgNext) return 1;
+    }
+    return 0;
+}
+
+static float total_buff_val(const Hero *h, int field) {
+    float total = 0;
+    for (int i = 0; i < h->numBuffs; i++) {
+        switch (field) {
+        case 0: total += h->buffs[i].damageMul;   break;
+        case 1: total += h->buffs[i].dodgeBonus;  break;
+        case 2: total += h->buffs[i].critDmgBonus; break;
+        }
+    }
+    return total;
+}
+
+static void consume_buff_flag(Hero *h, int consumeDodge, int consumeDouble) {
+    for (int i = 0; i < h->numBuffs; i++) {
+        if (consumeDodge  && h->buffs[i].dodgeNext)    { h->buffs[i].dodgeNext = 0; return; }
+        if (consumeDouble && h->buffs[i].doubleDmgNext){ h->buffs[i].doubleDmgNext = 0; return; }
+    }
+}
+
+static const int MOB_MAX_RARITY[NUM_DUNGEONS] = {
+    RARITY_UNCOMMON, RARITY_UNCOMMON, RARITY_RARE, RARITY_RARE,
+    RARITY_EPIC, RARITY_EPIC, RARITY_EPIC, RARITY_EPIC, RARITY_EPIC
+};
+
+static void try_boss_loot(GameState *gs) {
+    Hero *h = &gs->hero;
+    if (h->invCount >= MAX_INVENTORY) return;
+
+    const DungeonDef *dg = data_dungeon(gs->currentDungeon);
+    if (!dg) return;
+
+    int classMask = (1 << h->classId);
+    int minLvl = dg->levelReq;
+    int maxLvl = dg->levelReq + 20;
+    int bossMaxRar = MOB_MAX_RARITY[gs->currentDungeon] + 1;
+    if (bossMaxRar > RARITY_LEGENDARY) bossMaxRar = RARITY_LEGENDARY;
+
+    int byRarity[NUM_RARITIES][100];
+    int nByRarity[NUM_RARITIES];
+    for (int r = 0; r < NUM_RARITIES; r++) nByRarity[r] = 0;
+
+    for (int i = 0; i < data_num_items(); i++) {
+        const ItemDef *it = data_item(i);
+        if (it->levelReq >= minLvl && it->levelReq <= maxLvl &&
+            it->rarity <= bossMaxRar &&
+            (it->classMask == 0 || (it->classMask & classMask))) {
+            int r = it->rarity;
+            if (r >= 0 && r < NUM_RARITIES && nByRarity[r] < 100)
+                byRarity[r][nByRarity[r]++] = i;
+        }
+    }
+
+    static const int RARITY_WEIGHTS[NUM_RARITIES] = { 50, 30, 12, 6, 2 };
+    int totalWeight = 0;
+    for (int r = 0; r < NUM_RARITIES; r++) {
+        if (nByRarity[r] > 0) totalWeight += RARITY_WEIGHTS[r];
+    }
+    if (totalWeight == 0) return;
+
+    int roll = rand() % totalWeight;
+    int chosenRarity = 0;
+    int accum = 0;
+    for (int r = 0; r < NUM_RARITIES; r++) {
+        if (nByRarity[r] == 0) continue;
+        accum += RARITY_WEIGHTS[r];
+        if (roll < accum) { chosenRarity = r; break; }
+    }
+
+    int idx = byRarity[chosenRarity][rand() % nByRarity[chosenRarity]];
+    const ItemDef *drop = data_item(idx);
+    h->inventory[h->invCount++] = *drop;
+    char buf[LOG_LINE_W + 1];
+    snprintf(buf, sizeof(buf), "[BOSS LOOT] %s!", drop->name);
+    ui_log(gs, buf, data_rarity_color(drop->rarity));
+}
+
+static void try_loot_drop(GameState *gs) {
+    Hero *h = &gs->hero;
+    Enemy *e = &gs->enemy;
+    if (randf() >= e->dropChance) return;
+
+    const DungeonDef *dg = data_dungeon(gs->currentDungeon);
+    if (!dg) return;
+
+    int classMask = (1 << h->classId);
+    int maxRar = MOB_MAX_RARITY[gs->currentDungeon];
+    const ItemDef *drop = data_random_drop(dg->levelReq, dg->levelReq + 15, classMask, maxRar);
+    if (!drop) return;
+    if (h->invCount >= MAX_INVENTORY) return;
+
+    h->inventory[h->invCount++] = *drop;
+    char buf[LOG_LINE_W + 1];
+    snprintf(buf, sizeof(buf), "[LOOT] %s!", drop->name);
+    ui_log(gs, buf, data_rarity_color(drop->rarity));
+}
+
+static void apply_skill(GameState *gs, const SkillDef *sk) {
+    Hero *h = &gs->hero;
+    Enemy *e = &gs->enemy;
+    EStats es = hero_effective_stats(h);
+    char buf[LOG_LINE_W + 1];
+    int totalDmg = 0;
+
+    if (sk->dmgMul > 0) {
+        int hits = sk->numHits > 1 ? sk->numHits : 1;
+        for (int i = 0; i < hits; i++) {
+            int d = dmg_variance((int)(es.damage * sk->dmgMul));
+            if (!sk->ignoreArmor) {
+                int arm = (int)(e->defense * es.dmgReduction);
+                d -= arm;
+            }
+            if (d < 1) d = 1;
+            e->hp -= d;
+            totalDmg += d;
+        }
+    }
+
+    if (sk->stunTicks > 0) e->stunned = sk->stunTicks;
+
+    if (sk->buffTicks > 0 && h->numBuffs < MAX_BUFFS) {
+        Buff b;
+        memset(&b, 0, sizeof(b));
+        strncpy(b.name, sk->name, MAX_NAME - 1);
+        b.ticksLeft    = sk->buffTicks;
+        b.damageMul    = sk->buffDmgMul;
+        b.dodgeBonus   = sk->buffDodge;
+        b.critDmgBonus = sk->buffCritBonus;
+        b.immune       = sk->buffImmune;
+        if (sk->buffHealPct > 0)
+            b.healPerTick = es.maxHp * sk->buffHealPct / 100;
+        if (sk->buffDmgPct > 0) {
+            b.dmgPerTick = es.damage * sk->buffDmgPct / 100;
+            if (b.dmgPerTick < 1) b.dmgPerTick = 1;
+        }
+        if (sk->buffShieldPct > 0)
+            b.shieldHp = es.maxHp * sk->buffShieldPct / 100;
+        h->buffs[h->numBuffs++] = b;
+    }
+
+    if (sk->healPct > 0) {
+        int heal = es.maxHp * sk->healPct / 100;
+        hero_heal(h, heal);
+    }
+
+    if (sk->manaPct > 0) {
+        int mana = h->maxResource * sk->manaPct / 100;
+        hero_restore_resource(h, mana);
+    }
+
+    if (totalDmg > 0 && sk->healPct > 0) {
+        snprintf(buf, sizeof(buf), "[%s] %d dmg, healed %d",
+                 sk->name, totalDmg, es.maxHp * sk->healPct / 100);
+    } else if (totalDmg > 0) {
+        snprintf(buf, sizeof(buf), "[%s] %d damage!", sk->name, totalDmg);
+    } else if (sk->healPct > 0) {
+        snprintf(buf, sizeof(buf), "[%s] Healed %d!",
+                 sk->name, es.maxHp * sk->healPct / 100);
+    } else {
+        snprintf(buf, sizeof(buf), "[%s] %s", sk->name, sk->description);
+    }
+    ui_log(gs, buf, CP_CYAN);
+}
+
+void combat_try_skills(GameState *gs) {
+    Hero *h = &gs->hero;
+    Enemy *e = &gs->enemy;
+
+    for (int t = MAX_SKILL_TIERS - 1; t >= 0; t--) {
+        if (h->skillChoices[t] < 0) continue;
+        if (h->level < data_skill_level(t)) continue;
+        if (h->skillCooldowns[t] > 0) continue;
+
+        const SkillDef *sk = data_skill(h->classId, t, h->skillChoices[t]);
+        if (!sk || !sk->name) continue;
+
+        if (h->resource < sk->resourceCost) continue;
+
+        if (sk->hpBelow > 0) {
+            int pct = h->hp * 100 / (h->maxHp > 0 ? h->maxHp : 1);
+            if (pct >= sk->hpBelow) continue;
+        }
+
+        if (sk->enemyHpBelow > 0) {
+            int pct = e->hp * 100 / (e->maxHp > 0 ? e->maxHp : 1);
+            if (pct >= sk->enemyHpBelow) continue;
+        }
+
+        h->resource -= sk->resourceCost;
+        h->skillCooldowns[t] = sk->cooldown;
+        apply_skill(gs, sk);
+        return;
+    }
+}
+
+void combat_tick(GameState *gs) {
+    if (!gs->inDungeon || gs->paused) return;
+    if (gs->bossTimer > 0) {
+        gs->bossTimer--;
+        if (gs->bossTimer <= 0) {
+            gs->dungeonKills = 0;
+            gs->bossActive = 0;
+            ui_log(gs, "The dungeon stirs again...", CP_YELLOW);
+            combat_spawn(gs);
+        }
+        return;
+    }
+    if (!gs->hasEnemy) return;
+    if (gs->deathTimer > 0) {
+        gs->deathTimer--;
+        if (gs->deathTimer <= 0) {
+            EStats es = hero_effective_stats(&gs->hero);
+            gs->hero.hp = es.maxHp;
+            gs->hero.maxHp = es.maxHp;
+            gs->hero.resource = gs->hero.maxResource;
+            gs->hero.numBuffs = 0;
+            ui_log(gs, "You rise again...", CP_GREEN);
+            combat_spawn(gs);
+        }
+        return;
+    }
+
+    Hero *h = &gs->hero;
+    Enemy *e = &gs->enemy;
+    EStats es = hero_effective_stats(h);
+    char buf[LOG_LINE_W + 1];
+
+    gs->tickCount++;
+
+    for (int t = 0; t < MAX_SKILL_TIERS; t++)
+        if (h->skillCooldowns[t] > 0) h->skillCooldowns[t]--;
+
+    const ClassDef *cd = data_class(h->classId);
+    hero_restore_resource(h, cd->resourceRegen);
+
+    combat_tick_buffs(gs);
+    combat_try_skills(gs);
+
+    if (e->hp <= 0) goto enemy_killed;
+
+    float dmgMul = 1.0f + total_buff_val(h, 0);
+    int baseDmg = dmg_variance((int)(es.damage * dmgMul));
+    int doubleDmg = has_buff_flag(h, 0, 0, 0, 1);
+    if (doubleDmg) { baseDmg *= 2; consume_buff_flag(h, 0, 1); }
+
+    int isCrit = randf() < es.critChance;
+    if (isCrit) {
+        float cm = es.critMult + total_buff_val(h, 2);
+        baseDmg = (int)(baseDmg * cm);
+    }
+
+    int armored = (int)(e->defense * es.dmgReduction);
+    int finalDmg = baseDmg - armored;
+    if (finalDmg < 1) finalDmg = 1;
+    e->hp -= finalDmg;
+
+    if (isCrit)
+        snprintf(buf, sizeof(buf), "You crit %s for %d! [CRIT]", e->name, finalDmg);
+    else
+        snprintf(buf, sizeof(buf), "You hit %s for %d.", e->name, finalDmg);
+    ui_log(gs, buf, isCrit ? CP_YELLOW : CP_WHITE);
+
+enemy_killed:
+    if (e->hp <= 0) {
+        h->totalKills++;
+        int gold = e->goldReward / 4;
+        if (gold < 1) gold = 1;
+        h->gold += gold;
+        h->totalGoldEarned += gold;
+
+        int xp = (int)(e->xpReward * es.xpMultiplier);
+
+        if (gs->bossActive) {
+            snprintf(buf, sizeof(buf), "*** %s SLAIN! *** +%dXP +%dG",
+                     e->name, xp, gold);
+            ui_log(gs, buf, CP_YELLOW);
+            try_boss_loot(gs);
+            hero_add_xp(gs, xp);
+            int regen = es.stats[VIT] * 2;
+            hero_heal(h, regen);
+            gs->hasEnemy = 0;
+            gs->bossTimer = BOSS_DELAY;
+            ui_log(gs, "The dungeon falls silent...", CP_MAGENTA);
+        } else {
+            gs->dungeonKills++;
+            snprintf(buf, sizeof(buf), "Slew %s! +%dXP +%dG",
+                     e->name, xp, gold);
+            ui_log(gs, buf, CP_GREEN);
+            try_loot_drop(gs);
+            hero_add_xp(gs, xp);
+            int regen = es.stats[VIT] * 2;
+            hero_heal(h, regen);
+            combat_spawn(gs);
+        }
+        return;
+    }
+
+    if (e->stunned > 0) {
+        e->stunned--;
+        ui_log(gs, "Enemy is stunned!", CP_CYAN);
+        return;
+    }
+    if (e->slowed > 0) {
+        e->slowed--;
+        ui_log(gs, "Enemy is slowed...", CP_CYAN);
+        return;
+    }
+
+    int dodgeNext = has_buff_flag(h, 0, 0, 1, 0);
+    float totalDodge = es.dodgeChance + total_buff_val(h, 1);
+    if (dodgeNext || randf() < totalDodge) {
+        if (dodgeNext) consume_buff_flag(h, 1, 0);
+        snprintf(buf, sizeof(buf), "%s attacks - DODGE!", e->name);
+        ui_log(gs, buf, CP_CYAN);
+        return;
+    }
+
+    if (has_buff_flag(h, 1, 0, 0, 0)) {
+        snprintf(buf, sizeof(buf), "%s attacks - IMMUNE!", e->name);
+        ui_log(gs, buf, CP_YELLOW);
+        return;
+    }
+
+    int eDmg = dmg_variance(e->attack);
+    int reduced = (int)(eDmg * es.dmgReduction);
+    eDmg -= reduced;
+    eDmg -= es.flatDmgReduce;
+
+    if (es.blockChance > 0 && randf() < es.blockChance) {
+        eDmg = (int)(eDmg * (1.0f - es.blockReduction));
+        snprintf(buf, sizeof(buf), "%s hits you for %d. [BLOCK]", e->name, eDmg < 1 ? 1 : eDmg);
+        ui_log(gs, buf, CP_YELLOW);
+    } else {
+        snprintf(buf, sizeof(buf), "%s hits you for %d.", e->name, eDmg < 1 ? 1 : eDmg);
+        ui_log(gs, buf, CP_RED);
+    }
+
+    if (has_buff_flag(h, 0, 1, 0, 0) && h->resource >= eDmg) {
+        h->resource -= eDmg;
+        snprintf(buf, sizeof(buf), "Mana Shield absorbs %d damage!", eDmg);
+        ui_log(gs, buf, CP_MAGENTA);
+    } else {
+        if (eDmg < 1) eDmg = 1;
+        for (int i = 0; i < h->numBuffs && eDmg > 0; i++) {
+            if (h->buffs[i].shieldHp > 0) {
+                if (h->buffs[i].shieldHp >= eDmg) {
+                    h->buffs[i].shieldHp -= eDmg;
+                    eDmg = 0;
+                } else {
+                    eDmg -= h->buffs[i].shieldHp;
+                    h->buffs[i].shieldHp = 0;
+                }
+            }
+        }
+        if (eDmg > 0) h->hp -= eDmg;
+    }
+
+    if (h->hp <= 0) {
+        h->hp = 0;
+        h->deaths++;
+        int goldLoss = h->gold / 10;
+        h->gold -= goldLoss;
+        if (h->gold < 0) h->gold = 0;
+        h->numBuffs = 0;
+        gs->dungeonKills = 0;
+        gs->bossActive = 0;
+        snprintf(buf, sizeof(buf), "You died! Lost %d gold. Reviving...", goldLoss);
+        ui_log(gs, buf, CP_RED);
+        gs->deathTimer = 4;
+    }
+}
