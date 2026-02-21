@@ -852,6 +852,8 @@ void data_shop_item(ItemDef *out, int slot, int level, int classId) {
     int budget = (int)((2.0f + level * 1.1f) * SLOT_MUL[slot] / 100.0f
                        * RAR_MUL[rarity] / 100.0f);
     if (budget < 2) budget = 2;
+    budget = budget * 3 / 4;  /* 75% of drop budget — shop is a fallback, not BiS */
+    if (budget < 1) budget = 1;
 
     out->stats[suf->stat1] = budget * suf->w1 / 100;
     out->stats[suf->stat2] = budget - out->stats[suf->stat1];
