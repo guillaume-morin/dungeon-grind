@@ -62,106 +62,106 @@ static const int SKILL_LEVELS[MAX_SKILL_TIERS] = { 10, 20, 30, 40, 50, 60 };
 static const SkillDef SKILLS[NUM_CLASSES][MAX_SKILL_TIERS][2] = {
     [CLASS_WARRIOR] = {
         {
-            {.name="Rend", .description="Bleed: 50% DoT/tick 4t", .cooldown=10, .resourceCost=15, .buffTicks=4, .buffDmgPct=50},
-            {.name="Victory Rush", .description="150% dmg + heal 15%", .cooldown=8, .resourceCost=20, .dmgMul=1.5f, .healPct=15}
+            {.name="Rend", .description="Bleed: 50% DoT/tick 4t", .cooldown=10, .resourceCost=23, .buffTicks=4, .buffDmgPct=50},
+            {.name="Victory Rush", .description="150% dmg + heal 15%", .cooldown=8, .resourceCost=30, .dmgMul=1.5f, .healPct=15}
         },
         {
-            {.name="Bloodthirst", .description="180% dmg + heal 5%", .cooldown=6, .resourceCost=25, .dmgMul=1.8f, .healPct=5},
-            {.name="Execute", .description="400% dmg if enemy<20%", .cooldown=4, .resourceCost=30, .dmgMul=4.0f, .enemyHpBelow=20}
+            {.name="Bloodthirst", .description="180% dmg + heal 5%", .cooldown=6, .resourceCost=38, .dmgMul=1.8f, .healPct=5},
+            {.name="Execute", .description="400% dmg if enemy<20%", .cooldown=12, .resourceCost=45, .dmgMul=4.0f, .enemyHpBelow=20}
         },
         {
             {.name="Second Wind", .description="Heal 5%/tick 3t if HP<35%", .cooldown=15, .resourceCost=0, .buffTicks=3, .buffHealPct=5, .hpBelow=35},
-            {.name="Ignore Pain", .description="Shield 25% maxHP", .cooldown=12, .resourceCost=20, .buffTicks=6, .buffShieldPct=25}
+            {.name="Ignore Pain", .description="Shield 25% maxHP", .cooldown=12, .resourceCost=30, .buffTicks=6, .buffShieldPct=25}
         },
         {
-            {.name="Recklessness", .description="+100% crit dmg 4t", .cooldown=18, .resourceCost=30, .buffTicks=4, .buffCritBonus=1.0f},
-            {.name="Rampage", .description="4 hits at 80% dmg", .cooldown=10, .resourceCost=40, .dmgMul=0.8f, .numHits=4}
+            {.name="Recklessness", .description="+100% crit dmg 4t", .cooldown=18, .resourceCost=45, .buffTicks=4, .buffCritBonus=1.0f},
+            {.name="Rampage", .description="4 hits at 80% dmg", .cooldown=10, .resourceCost=60, .dmgMul=0.8f, .numHits=4}
         },
         {
             {.name="Shield Wall", .description="Shield 40% HP if HP<40%", .cooldown=25, .resourceCost=0, .buffTicks=5, .buffShieldPct=40, .hpBelow=40},
-            {.name="Berserker Rage", .description="+40% dmg 6t", .cooldown=16, .resourceCost=30, .buffTicks=6, .buffDmgMul=0.4f}
+            {.name="Berserker Rage", .description="+40% dmg 6t", .cooldown=16, .resourceCost=45, .buffTicks=6, .buffDmgMul=0.4f}
         },
         {
-            {.name="Bladestorm", .description="5x100% dmg + immune 1t", .cooldown=22, .resourceCost=50, .dmgMul=1.0f, .numHits=5, .buffTicks=1, .buffImmune=1},
-            {.name="Avatar", .description="+30% dmg + shield 20% 8t", .cooldown=25, .resourceCost=40, .buffTicks=8, .buffDmgMul=0.3f, .buffShieldPct=20}
+            {.name="Bladestorm", .description="5x100% dmg + immune 1t", .cooldown=22, .resourceCost=75, .dmgMul=1.0f, .numHits=5, .buffTicks=1, .buffImmune=1},
+            {.name="Avatar", .description="+30% dmg + shield 20% 8t", .cooldown=25, .resourceCost=60, .buffTicks=8, .buffDmgMul=0.3f, .buffShieldPct=20}
         }
     },
     [CLASS_ROGUE] = {
         {
-            {.name="Slice and Dice", .description="+35% dmg 5t", .cooldown=12, .resourceCost=20, .buffTicks=5, .buffDmgMul=0.35f},
-            {.name="Deadly Poison", .description="DoT 60%/tick 4t", .cooldown=8, .resourceCost=15, .buffTicks=4, .buffDmgPct=60}
+            {.name="Slice and Dice", .description="+35% dmg 5t", .cooldown=12, .resourceCost=30, .buffTicks=5, .buffDmgMul=0.35f},
+            {.name="Deadly Poison", .description="DoT 60%/tick 4t", .cooldown=8, .resourceCost=23, .buffTicks=4, .buffDmgPct=60}
         },
         {
-            {.name="Rupture", .description="DoT 80%/tick 5t", .cooldown=10, .resourceCost=25, .buffTicks=5, .buffDmgPct=80},
-            {.name="Ghostly Strike", .description="180% dmg +20% dodge 3t", .cooldown=8, .resourceCost=25, .dmgMul=1.8f, .buffTicks=3, .buffDodge=0.2f}
+            {.name="Rupture", .description="DoT 80%/tick 5t", .cooldown=10, .resourceCost=38, .buffTicks=5, .buffDmgPct=80},
+            {.name="Ghostly Strike", .description="180% dmg +20% dodge 3t", .cooldown=8, .resourceCost=38, .dmgMul=1.8f, .buffTicks=3, .buffDodge=0.2f}
         },
         {
-            {.name="Adrenaline Rush", .description="+50% dmg 5t", .cooldown=20, .resourceCost=30, .buffTicks=5, .buffDmgMul=0.5f},
+            {.name="Adrenaline Rush", .description="+50% dmg 5t", .cooldown=20, .resourceCost=45, .buffTicks=5, .buffDmgMul=0.5f},
             {.name="Cloak of Shadows", .description="Immune 2t if HP<40%", .cooldown=22, .resourceCost=0, .buffTicks=2, .buffImmune=1, .hpBelow=40}
         },
         {
-            {.name="Cold Blood", .description="+150% crit dmg 2t", .cooldown=14, .resourceCost=30, .buffTicks=2, .buffCritBonus=1.5f},
-            {.name="Marked for Death", .description="+60% crit dmg 5t", .cooldown=16, .resourceCost=25, .buffTicks=5, .buffCritBonus=0.6f}
+            {.name="Cold Blood", .description="+150% crit dmg 2t", .cooldown=14, .resourceCost=45, .buffTicks=2, .buffCritBonus=1.5f},
+            {.name="Marked for Death", .description="+60% crit dmg 5t", .cooldown=16, .resourceCost=38, .buffTicks=5, .buffCritBonus=0.6f}
         },
         {
-            {.name="Shadow Blades", .description="200% no-armor +30% dmg 4t", .cooldown=20, .resourceCost=35, .dmgMul=2.0f, .ignoreArmor=1, .buffTicks=4, .buffDmgMul=0.3f},
-            {.name="Crimson Vial", .description="Heal 25%", .cooldown=16, .resourceCost=20, .healPct=25}
+            {.name="Shadow Blades", .description="200% no-armor +30% dmg 4t", .cooldown=20, .resourceCost=53, .dmgMul=2.0f, .ignoreArmor=1, .buffTicks=4, .buffDmgMul=0.3f},
+            {.name="Crimson Vial", .description="Heal 25%", .cooldown=16, .resourceCost=30, .healPct=25}
         },
         {
-            {.name="Shadow Dance", .description="+80% dmg +80% critDmg 4t", .cooldown=22, .resourceCost=40, .buffTicks=4, .buffDmgMul=0.8f, .buffCritBonus=0.8f},
-            {.name="Death from Above", .description="500% no-armor + stun 2t", .cooldown=20, .resourceCost=50, .dmgMul=5.0f, .ignoreArmor=1, .stunTicks=2}
+            {.name="Shadow Dance", .description="+80% dmg +80% critDmg 4t", .cooldown=22, .resourceCost=60, .buffTicks=4, .buffDmgMul=0.8f, .buffCritBonus=0.8f},
+            {.name="Death from Above", .description="500% no-armor + stun 2t", .cooldown=20, .resourceCost=75, .dmgMul=5.0f, .ignoreArmor=1, .stunTicks=2}
         }
     },
     [CLASS_MAGE] = {
         {
-            {.name="Pyroblast", .description="300% dmg ignore armor", .cooldown=10, .resourceCost=30, .dmgMul=3.0f, .ignoreArmor=1},
-            {.name="Living Bomb", .description="DoT 100%/tick 4t", .cooldown=10, .resourceCost=25, .buffTicks=4, .buffDmgPct=100}
+            {.name="Pyroblast", .description="300% dmg ignore armor", .cooldown=10, .resourceCost=45, .dmgMul=3.0f, .ignoreArmor=1},
+            {.name="Living Bomb", .description="DoT 100%/tick 4t", .cooldown=10, .resourceCost=38, .buffTicks=4, .buffDmgPct=100}
         },
         {
-            {.name="Ice Barrier", .description="Shield 30% maxHP", .cooldown=14, .resourceCost=25, .buffTicks=8, .buffShieldPct=30},
-            {.name="Blazing Barrier", .description="Shield 20% + DoT 40%/t 6t", .cooldown=14, .resourceCost=25, .buffTicks=6, .buffShieldPct=20, .buffDmgPct=40}
+            {.name="Ice Barrier", .description="Shield 30% maxHP", .cooldown=14, .resourceCost=38, .buffTicks=8, .buffShieldPct=30},
+            {.name="Blazing Barrier", .description="Shield 20% + DoT 40%/t 6t", .cooldown=14, .resourceCost=38, .buffTicks=6, .buffShieldPct=20, .buffDmgPct=40}
         },
         {
-            {.name="Icy Veins", .description="+30% dmg 6t", .cooldown=20, .resourceCost=30, .buffTicks=6, .buffDmgMul=0.3f},
-            {.name="Combustion", .description="+100% crit dmg 4t", .cooldown=18, .resourceCost=35, .buffTicks=4, .buffCritBonus=1.0f}
+            {.name="Icy Veins", .description="+30% dmg 6t", .cooldown=20, .resourceCost=45, .buffTicks=6, .buffDmgMul=0.3f},
+            {.name="Combustion", .description="+100% crit dmg 4t", .cooldown=18, .resourceCost=53, .buffTicks=4, .buffCritBonus=1.0f}
         },
         {
-            {.name="Arcane Power", .description="+40% dmg 5t", .cooldown=16, .resourceCost=40, .buffTicks=5, .buffDmgMul=0.4f},
+            {.name="Arcane Power", .description="+40% dmg 5t", .cooldown=16, .resourceCost=60, .buffTicks=5, .buffDmgMul=0.4f},
             {.name="Evocation", .description="Heal 30% + mana 50%", .cooldown=20, .resourceCost=0, .healPct=30, .manaPct=50}
         },
         {
             {.name="Ice Block", .description="Immune 3t+heal 20% if<30%", .cooldown=28, .resourceCost=0, .buffTicks=3, .buffImmune=1, .healPct=20, .hpBelow=30},
-            {.name="Mirror Image", .description="+25% dodge 5t", .cooldown=18, .resourceCost=30, .buffTicks=5, .buffDodge=0.25f}
+            {.name="Mirror Image", .description="+25% dodge 5t", .cooldown=18, .resourceCost=45, .buffTicks=5, .buffDodge=0.25f}
         },
         {
-            {.name="Meteor", .description="600% no-armor + stun 2t", .cooldown=22, .resourceCost=60, .dmgMul=6.0f, .ignoreArmor=1, .stunTicks=2},
-            {.name="Glacial Spike", .description="500% dmg + stun 3t", .cooldown=20, .resourceCost=50, .dmgMul=5.0f, .stunTicks=3}
+            {.name="Meteor", .description="600% no-armor + stun 2t", .cooldown=22, .resourceCost=90, .dmgMul=6.0f, .ignoreArmor=1, .stunTicks=2},
+            {.name="Glacial Spike", .description="500% dmg + stun 3t", .cooldown=20, .resourceCost=75, .dmgMul=5.0f, .stunTicks=3}
         }
     },
     [CLASS_PRIEST] = {
         {
-            {.name="Shadow Word: Pain", .description="DoT 80%/tick 5t", .cooldown=10, .resourceCost=15, .buffTicks=5, .buffDmgPct=80},
-            {.name="PW: Shield", .description="Shield 30% maxHP", .cooldown=12, .resourceCost=20, .buffTicks=8, .buffShieldPct=30}
+            {.name="Shadow Word: Pain", .description="DoT 80%/tick 5t", .cooldown=10, .resourceCost=23, .buffTicks=5, .buffDmgPct=80},
+            {.name="PW: Shield", .description="Shield 30% maxHP", .cooldown=12, .resourceCost=30, .buffTicks=8, .buffShieldPct=30}
         },
         {
             {.name="Desperate Prayer", .description="Heal 30% if HP<35%", .cooldown=18, .resourceCost=0, .healPct=30, .hpBelow=35},
-            {.name="Vampiric Embrace", .description="Heal 4%/t+DoT 60%/t 5t", .cooldown=14, .resourceCost=25, .buffTicks=5, .buffHealPct=4, .buffDmgPct=60}
+            {.name="Vampiric Embrace", .description="Heal 4%/t+DoT 60%/t 5t", .cooldown=14, .resourceCost=38, .buffTicks=5, .buffHealPct=4, .buffDmgPct=60}
         },
         {
-            {.name="Penance", .description="3x 150% dmg + heal 5%", .cooldown=10, .resourceCost=30, .dmgMul=1.5f, .numHits=3, .healPct=5},
+            {.name="Penance", .description="3x 150% dmg + heal 5%", .cooldown=10, .resourceCost=45, .dmgMul=1.5f, .numHits=3, .healPct=5},
             {.name="Shadowfiend", .description="DoT 120%/t 5t + mana 30%", .cooldown=18, .resourceCost=0, .buffTicks=5, .buffDmgPct=120, .manaPct=30}
         },
         {
             {.name="Guardian Spirit", .description="Immune 2t+heal30% if<25%", .cooldown=28, .resourceCost=0, .buffTicks=2, .buffImmune=1, .healPct=30, .hpBelow=25},
-            {.name="Power Infusion", .description="+35% dmg 6t", .cooldown=18, .resourceCost=30, .buffTicks=6, .buffDmgMul=0.35f}
+            {.name="Power Infusion", .description="+35% dmg 6t", .cooldown=18, .resourceCost=45, .buffTicks=6, .buffDmgMul=0.35f}
         },
         {
-            {.name="Holy Nova", .description="200% dmg + heal 15%", .cooldown=10, .resourceCost=35, .dmgMul=2.0f, .healPct=15},
-            {.name="Void Eruption", .description="+40% dmg 6t", .cooldown=20, .resourceCost=40, .buffTicks=6, .buffDmgMul=0.4f}
+            {.name="Holy Nova", .description="200% dmg + heal 15%", .cooldown=10, .resourceCost=53, .dmgMul=2.0f, .healPct=15},
+            {.name="Void Eruption", .description="+40% dmg 6t", .cooldown=20, .resourceCost=60, .buffTicks=6, .buffDmgMul=0.4f}
         },
         {
-            {.name="Divine Hymn", .description="Heal 8%/t 5t + immune", .cooldown=28, .resourceCost=50, .buffTicks=5, .buffHealPct=8, .buffImmune=1},
-            {.name="SW: Death", .description="500% dmg if enemy<20%", .cooldown=8, .resourceCost=40, .dmgMul=5.0f, .enemyHpBelow=20}
+            {.name="Divine Hymn", .description="Heal 8%/t 5t + immune", .cooldown=28, .resourceCost=75, .buffTicks=5, .buffHealPct=8, .buffImmune=1},
+            {.name="SW: Death", .description="500% dmg if enemy<20%", .cooldown=15, .resourceCost=60, .dmgMul=5.0f, .enemyHpBelow=20}
         }
     }
 };
@@ -229,59 +229,59 @@ static const SkillDef SKILLS[NUM_CLASSES][MAX_SKILL_TIERS][2] = {
 #define TOTAL_ENEMIES      54
 
 static const EnemyTemplate ENEMIES[TOTAL_ENEMIES] = {
-    { "Goblin Grunt",   0,  45,  6, 2, 4,  18,  5, .0016f,
+    { "Goblin Grunt",   0,  45,  6, 2, 4,  18,  5, .008f,
       {"    ,   ,",  "   (o . o)", "    > v <",  "    /| |\\",  "     | |" }},
-    { "Goblin Archer",  0,  38,  9, 1, 5,  20,  6, .0016f,
+    { "Goblin Archer",  0,  38,  9, 1, 5,  20,  6, .008f,
       {"    ,   ,",  "   (- . -)~}", "    > ^ <",  "    /| |\\",  "     | |" }},
-    { "Dire Wolf",      0,  35, 10, 1, 8,  16,  3, .0012f,
+    { "Dire Wolf",      0,  35, 10, 1, 8,  16,  3, .006f,
       {"    /\\_/\\",  "   ( o.o )", "    > ^ <",  "   /|   |\\", "   ~ ~ ~ ~" }},
-    { "Goblin Shaman",  0,  30, 12, 1, 3,  24,  8, .002f,
+    { "Goblin Shaman",  0,  30, 12, 1, 3,  24,  8, .01f,
       {"   , ~ ,",   "  (@ . @) *", "   > ~ < |", "   /| |\\",   "    | |" }},
-    { "Orc Scout",      0,  70,  8, 4, 4,  28, 10, .0024f,
+    { "Orc Scout",      0,  70,  8, 4, 4,  28, 10, .012f,
       {"     ___",   "  ,-/o o\\",  "  | (__) |", "  | /||\\ |", "   \\|  |/" }},
 
-    { "Skeleton",       1,  80, 14, 4, 5,  42, 14, .0016f,
+    { "Skeleton",       1,  80, 14, 4, 5,  42, 14, .008f,
       {"    _____",  "   / x x \\", "   |  ^  |", "    \\___/",   "    /| |\\" }},
-    { "Zombie",         1, 110, 11, 6, 2,  45, 12, .0016f,
+    { "Zombie",         1, 110, 11, 6, 2,  45, 12, .008f,
       {"    _..._",  "   /x   \\~", "   | .  .|", "    \\_  _/",  "     |  |" }},
-    { "Ghoul",          1,  90, 18, 3, 7,  50, 16, .002f,
+    { "Ghoul",          1,  90, 18, 3, 7,  50, 16, .01f,
       {"   /^  ^\\",  "  (  ..  )",  "   \\<  >/",  "   /|  |\\",  "  / |  | \\" }},
-    { "Bone Mage",      1,  65, 22, 2, 4,  55, 20, .0024f,
+    { "Bone Mage",      1,  65, 22, 2, 4,  55, 20, .012f,
       {" *  _____  *","   / o o \\", "   | ___ |", "    \\___/",   "     | |" }},
-    { "Crypt Wraith",   1,  70, 20, 1, 9,  58, 18, .0028f,
+    { "Crypt Wraith",   1,  70, 20, 1, 9,  58, 18, .014f,
       {"  ~(    )~", "  / o  o \\", "  | ==== |", "   \\    /",   "    ~~~~" }},
 
-    { "Dark Knight",    2, 220, 28,18, 4,  95, 35, .002f,
+    { "Dark Knight",    2, 220, 28,18, 4,  95, 35, .01f,
       {"   _===_",   "  /|o  o|\\", "  ||_/\\_||", "  | [==] |", "  |_|  |_|" }},
-    { "Gargoyle",       2, 180, 32,14, 6, 100, 38, .002f,
+    { "Gargoyle",       2, 180, 32,14, 6, 100, 38, .01f,
       {"   _/  \\_",  "  / o  o \\", "  \\  /\\  /", "   \\/  \\/",  "   |_/\\_|" }},
-    { "Stone Golem",    2, 350, 24,25, 2, 110, 42, .0024f,
+    { "Stone Golem",    2, 350, 24,25, 2, 110, 42, .012f,
       {"  [######]", "  |  ..  |",  "  | [==] |",  "  |  ||  |",  "  |__|__|" }},
-    { "Shadow Archer",  2, 160, 36, 8, 8, 105, 40, .002f,
+    { "Shadow Archer",  2, 160, 36, 8, 8, 105, 40, .01f,
       {"    _/\\_",   "  /' .. '\\}","  |  ||  |", "  |  ||  |",  "   \\_||_/" }},
-    { "Cursed Warden",  2, 280, 30,20, 3, 115, 45, .0028f,
+    { "Cursed Warden",  2, 280, 30,20, 3, 115, 45, .014f,
       {"  =[====]=", "  |  ><  |",  "  |_/||\\_|", "  | [  ] |",  "  |_|  |_|" }},
 
-    { "Demon",          3, 400, 48,20, 6, 180, 70, .002f,
+    { "Demon",          3, 400, 48,20, 6, 180, 70, .01f,
       {"   }\\  /{",  "  ( o  o )",  "  |\\ \\/ /|", "  |/ || \\|", "   \\_||_/" }},
-    { "Shadow Lord",    3, 360, 55,15, 7, 200, 80, .0024f,
+    { "Shadow Lord",    3, 360, 55,15, 7, 200, 80, .012f,
       {" ~[======]~","  |  oo  |",  "  | \\  / |", "  |  \\/  |",  "  |______|" }},
-    { "Imp Swarm",      3, 250, 42, 8,10, 170, 65, .0016f,
+    { "Imp Swarm",      3, 250, 42, 8,10, 170, 65, .008f,
       {" /\\ /\\ /\\", " oo oo oo",   " >< >< ><",  " || || ||",   " ~~ ~~ ~~" }},
-    { "Pit Fiend",      3, 500, 52,22, 5, 220, 90, .0028f,
+    { "Pit Fiend",      3, 500, 52,22, 5, 220, 90, .014f,
       {" \\|/  \\|/",  " (  oo  )",   " |  /\\  |",  " | |  | |",  " |_|__|_|" }},
-    { "Void Stalker",   3, 320, 60,12, 9, 210, 85, .0024f,
+    { "Void Stalker",   3, 320, 60,12, 9, 210, 85, .012f,
       {"  ~.   .~",  " (  @ @  )",  "  \\ === /",   "   |   |",    "   ~   ~" }},
 
-    { "Death Knight",   4, 600, 65,35, 5, 340,130, .0024f,
+    { "Death Knight",   4, 600, 65,35, 5, 340,130, .012f,
       {"   _[==]_",  "  /|x  x|\\", "  || /\\ ||", "  |[====]|", "  |_|  |_|" }},
-    { "Undead Dragon",  4, 900, 72,28, 6, 420,180, .0028f,
+    { "Undead Dragon",  4, 900, 72,28, 6, 420,180, .014f,
       {" /\\   _/\\_", "/ \\\\=// \\",  "| | oo | |", " \\_\\ __ /_/","   |____|" }},
-    { "Lich King",      4, 750, 80,20, 7, 480,200, .0032f,
+    { "Lich King",      4, 750, 80,20, 7, 480,200, .016f,
       {" ~{ /--\\ }~","  |(o)(o)|",  "  | \\__/ |", "  / |  | \\", "   \\|__|/" }},
-    { "Bone Colossus",  4,1200, 60,40, 3, 400,160, .0028f,
+    { "Bone Colossus",  4,1200, 60,40, 3, 400,160, .014f,
       {" _|[##]|_",  " ||| oo|||",  " ||| /\\|||", " |||_||_|||","_|_|  |_|_" }},
-    { "Soul Reaver",    4, 550, 90,15,10, 460,190, .0032f,
+    { "Soul Reaver",    4, 550, 90,15,10, 460,190, .016f,
       {" ~{      }~","  ( @  @ )",  "  |\\-\"\"-/|", "   \\|  |/",  "    ~~~~" }},
 
     { "Goblin King",    0, 200, 18, 8, 3, 120, 60, .50f,
@@ -295,48 +295,48 @@ static const EnemyTemplate ENEMIES[TOTAL_ENEMIES] = {
     { "The Lich God",   4,2000,110,45, 7,1500,700, .50f,
       {" ~{/====\\}~","  |(O)(O)|",  "  | \\==/ |",  "  |[LICH]|",  "  |_|__|_|" }},
 
-    { "Magma Elemental", 5, 1200, 100, 35,  5,  620, 260, .002f,
+    { "Magma Elemental", 5, 1200, 100, 35,  5,  620, 260, .01f,
       {"   .\\\\  //.",  " ~{ o  o }~",  "  \\\\\\==///",  "   \\\\||//",   "    ~~~~" }},
-    { "Fire Imp",        5,  900, 120, 25,  8,  580, 240, .0016f,
+    { "Fire Imp",        5,  900, 120, 25,  8,  580, 240, .008f,
       {"   ^/  \\^",   " ~( ^^ )~",   "  ( || )",    "   \\/\\/",     "    ||" }},
-    { "Lava Lurker",     5, 1500,  95, 45,  4,  700, 300, .002f,
+    { "Lava Lurker",     5, 1500,  95, 45,  4,  700, 300, .01f,
       {"  ___===___",  " /  o o  \\",  " | /\\/\\ |",  "  \\ __ /",    "   |__|" }},
-    { "Infernal Guard",  5, 1800, 110, 50,  4,  750, 320, .0024f,
+    { "Infernal Guard",  5, 1800, 110, 50,  4,  750, 320, .012f,
       {"  =[|##|]=",  " ~|| oo||~",  "  || /\\||",   "  |[==]|",    "  |_||_|" }},
-    { "Scorched Wyvern", 5, 1100, 130, 28,  9,  680, 280, .0028f,
+    { "Scorched Wyvern", 5, 1100, 130, 28,  9,  680, 280, .014f,
       {" ^/\\__/\\^",  "/ \\\\><// \\", "|  \\\\//  |", " \\_\\/\\_/",   "   |__|" }},
 
-    { "Frost Revenant",  6, 1800, 145, 50,  6, 1050, 420, .002f,
+    { "Frost Revenant",  6, 1800, 145, 50,  6, 1050, 420, .01f,
       {" ~*{    }*~",  "  ( ** )",    "  |\\  /|",   "   \\||/",     "    **" }},
-    { "Ice Wraith",      6, 1400, 170, 35,  9,  980, 400, .002f,
+    { "Ice Wraith",      6, 1400, 170, 35,  9,  980, 400, .01f,
       {"  ~*   *~",   " ~( *  * )~",  "  \\ == /",    "   \\  /",     "    **" }},
-    { "Glacial Golem",   6, 2800, 130, 70,  3, 1200, 500, .0024f,
+    { "Glacial Golem",   6, 2800, 130, 70,  3, 1200, 500, .012f,
       {" *[####]*",   " *|*  *|*",   "  | [] |",    "  |_||_|",    " *|  |*" }},
-    { "Frozen Archer",   6, 1500, 180, 40,  8, 1100, 450, .002f,
+    { "Frozen Archer",   6, 1500, 180, 40,  8, 1100, 450, .01f,
       {"   *_/\\_*",   " */' ''\\}*",  "  |* ||*|",   "  |  ||  |",  "   \\_||_/" }},
-    { "Winter Knight",   6, 2200, 155, 60,  5, 1150, 480, .0028f,
+    { "Winter Knight",   6, 2200, 155, 60,  5, 1150, 480, .014f,
       {"  *[**]*",    " */|*  *|\\*", " *||_/\\_||*", "  |*[]*|",    "  |_|  |_|" }},
 
-    { "Void Spawn",      7, 2800, 200, 65,  7, 1700, 680, .002f,
+    { "Void Spawn",      7, 2800, 200, 65,  7, 1700, 680, .01f,
       {"  ~.    .~",  "  ( .  . )",   "  |  ..  |",  "   \\    /",   "    ...." }},
-    { "Astral Devourer", 7, 2200, 240, 50, 10, 1600, 650, .002f,
+    { "Astral Devourer", 7, 2200, 240, 50, 10, 1600, 650, .01f,
       {" ~.  __  .~",  "  ( @  @ )",   " ~\\ >< /~",   "   \\  /",     "    .." }},
-    { "Null Walker",     7, 3200, 210, 80,  5, 1850, 750, .0024f,
+    { "Null Walker",     7, 3200, 210, 80,  5, 1850, 750, .012f,
       {"  .[____].",  " .| .  . |.", " .| [  ] |.", "  |  ||  |",  "  |__|__|" }},
-    { "Cosmic Horror",   7, 4500, 190, 90,  4, 2000, 800, .0024f,
+    { "Cosmic Horror",   7, 4500, 190, 90,  4, 2000, 800, .012f,
       {" .}\\    /{.",  ". ( .. ) .",  " .|\\  /|.",   " .|_||_|.",   "   .  ." }},
-    { "Rift Guardian",   7, 3000, 260, 70,  8, 1900, 780, .0028f,
+    { "Rift Guardian",   7, 3000, 260, 70,  8, 1900, 780, .014f,
       {" .[.===.].",  " .| @  @ |.", " .| \\  / |.", "  | .||. |",  "  |_|__|_|" }},
 
-    { "Eternal Sentinel",8, 4500, 280, 90,  6, 2900,1050, .002f,
+    { "Eternal Sentinel",8, 4500, 280, 90,  6, 2900,1050, .01f,
       {"  +[====]+",  " +|| ** ||+", " +||_/\\_||+", "  |+[]]+|",   "  |_|  |_|" }},
-    { "Seraphim",        8, 3500, 340, 70, 10, 2700,1000, .002f,
+    { "Seraphim",        8, 3500, 340, 70, 10, 2700,1000, .01f,
       {" +\\|/  \\|/+", " +( ^  ^ )+", "  +\\    /+",  "   +\\||/+",   "    +||+" }},
-    { "Time Weaver",     8, 3000, 370, 55, 12, 2800,1020, .0024f,
+    { "Time Weaver",     8, 3000, 370, 55, 12, 2800,1020, .012f,
       {"+~{ @  @ }~+","  +( oo )+",  " +|\\ \\/ /|+", "  +\\|  |/+",  "   + ~~ +" }},
-    { "Celestial Dragon",8, 6000, 300,110,  5, 3200,1200, .0028f,
+    { "Celestial Dragon",8, 6000, 300,110,  5, 3200,1200, .014f,
       {"+/\\+=+/\\_+", "+\\\\ \\\\=// /+","|| |oo| ||+", " \\_\\ +/_/+",  "  +|__|+" }},
-    { "Primordial One",  8, 5000, 350, 85,  8, 3100,1100, .0024f,
+    { "Primordial One",  8, 5000, 350, 85,  8, 3100,1100, .012f,
       {"+{  ____  }+","+(  O  O  )+","+ | \\__/ | +","+  \\|  |/  +","  + ++++ +" }},
 
     { "Ignis the Molten",5, 4500, 180, 55,  5, 2400,1000, .50f,
@@ -398,10 +398,10 @@ static const ItemDef ITEMS[] = {
     { "Nightfall",        SLOT_WEAPON,  RARITY_RARE,       32, 1200, { 5,24,0,0,0,0,10}, CM_ROG },
     { "Voidstaff",        SLOT_WEAPON,  RARITY_RARE,       32, 1200, { 0,0,24,10,0,0,4}, CM_MAG },
     { "Soulmender",       SLOT_WEAPON,  RARITY_RARE,       32, 1200, { 0,0,10,24,6,0,0}, CM_PRI },
-    { "Ashbringer",       SLOT_WEAPON,  RARITY_EPIC,       46, 5000, {40,12,0,0,10,8,0}, CM_WAR },
-    { "Death's Whisper",  SLOT_WEAPON,  RARITY_EPIC,       46, 5000, {10,40,0,0,0,0,15}, CM_ROG },
-    { "Staff of Eternity",SLOT_WEAPON,  RARITY_EPIC,       46, 5000, { 0,0,40,15,0,0,8}, CM_MAG },
-    { "Benediction",      SLOT_WEAPON,  RARITY_EPIC,       46, 5000, { 0,0,15,40,10,0,0}, CM_PRI },
+    { "Ashbringer",       SLOT_WEAPON,  RARITY_EPIC,       46, 45000, {40,12,0,0,10,8,0}, CM_WAR },
+    { "Death's Whisper",  SLOT_WEAPON,  RARITY_EPIC,       46, 15000, {10,40,0,0,0,0,15}, CM_ROG },
+    { "Staff of Eternity",SLOT_WEAPON,  RARITY_EPIC,       46, 15000, { 0,0,40,15,0,0,8}, CM_MAG },
+    { "Benediction",      SLOT_WEAPON,  RARITY_EPIC,       46, 15000, { 0,0,15,40,10,0,0}, CM_PRI },
 
     { "Iron Helm",        SLOT_HELMET,  RARITY_COMMON,      1,   10, { 0,0,0,0,2,1,0}, CM_WAR },
     { "Leather Hood",     SLOT_HELMET,  RARITY_COMMON,      1,   10, { 0,1,0,0,0,0,1}, CM_ROG },
@@ -419,10 +419,10 @@ static const ItemDef ITEMS[] = {
     { "Veil of Shadows",  SLOT_HELMET,  RARITY_RARE,       32,  850, { 0,10,0,0,4,0,8}, CM_ROG },
     { "Void Diadem",      SLOT_HELMET,  RARITY_RARE,       32,  850, { 0,0,14,6,3,0,0}, CM_MAG },
     { "Seraph's Halo",    SLOT_HELMET,  RARITY_RARE,       32,  850, { 0,0,0,12,8,5,0}, CM_PRI },
-    { "Crown of Ruin",    SLOT_HELMET,  RARITY_EPIC,       46, 3500, { 8,0,0,0,22,16,0}, CM_WAR },
-    { "Phantom Crown",    SLOT_HELMET,  RARITY_EPIC,       46, 3500, { 0,16,0,0,6,0,14}, CM_ROG },
-    { "Crown of Stars",   SLOT_HELMET,  RARITY_EPIC,       46, 3500, { 0,0,22,10,5,0,0}, CM_MAG },
-    { "Divine Crown",     SLOT_HELMET,  RARITY_EPIC,       46, 3500, { 0,0,0,18,12,8,0}, CM_PRI },
+    { "Crown of Ruin",    SLOT_HELMET,  RARITY_EPIC,       46, 10500, { 8,0,0,0,22,16,0}, CM_WAR },
+    { "Phantom Crown",    SLOT_HELMET,  RARITY_EPIC,       46, 10500, { 0,16,0,0,6,0,14}, CM_ROG },
+    { "Crown of Stars",   SLOT_HELMET,  RARITY_EPIC,       46, 10500, { 0,0,22,10,5,0,0}, CM_MAG },
+    { "Divine Crown",     SLOT_HELMET,  RARITY_EPIC,       46, 10500, { 0,0,0,18,12,8,0}, CM_PRI },
 
     { "Rusty Chainmail",  SLOT_CHEST,   RARITY_COMMON,      1,   12, { 0,0,0,0,1,2,0}, CM_WAR },
     { "Leather Vest",     SLOT_CHEST,   RARITY_COMMON,      1,   12, { 0,2,0,0,0,0,1}, CM_ROG },
@@ -440,10 +440,10 @@ static const ItemDef ITEMS[] = {
     { "Nightweave Vest",  SLOT_CHEST,   RARITY_RARE,       32,  950, { 0,12,0,0,5,0,10}, CM_ROG },
     { "Voidweave Robe",   SLOT_CHEST,   RARITY_RARE,       32,  950, { 0,0,16,8,3,0,0}, CM_MAG },
     { "Seraph's Garb",    SLOT_CHEST,   RARITY_RARE,       32,  950, { 0,0,0,14,10,7,0}, CM_PRI },
-    { "Aegis of Valor",   SLOT_CHEST,   RARITY_EPIC,       46, 4000, {10,0,0,0,22,28,0}, CM_WAR },
-    { "Phantom Shroud",   SLOT_CHEST,   RARITY_EPIC,       46, 4000, { 0,20,0,0,8,0,16}, CM_ROG },
-    { "Robe of Eternity", SLOT_CHEST,   RARITY_EPIC,       46, 4000, { 0,0,28,14,5,0,0}, CM_MAG },
-    { "Divine Regalia",   SLOT_CHEST,   RARITY_EPIC,       46, 4000, { 0,0,0,22,14,10,0}, CM_PRI },
+    { "Aegis of Valor",   SLOT_CHEST,   RARITY_EPIC,       46, 12000, {10,0,0,0,22,28,0}, CM_WAR },
+    { "Phantom Shroud",   SLOT_CHEST,   RARITY_EPIC,       46, 12000, { 0,20,0,0,8,0,16}, CM_ROG },
+    { "Robe of Eternity", SLOT_CHEST,   RARITY_EPIC,       46, 12000, { 0,0,28,14,5,0,0}, CM_MAG },
+    { "Divine Regalia",   SLOT_CHEST,   RARITY_EPIC,       46, 12000, { 0,0,0,22,14,10,0}, CM_PRI },
 
     { "Chain Leggings",   SLOT_LEGS,    RARITY_COMMON,      1,   10, { 0,0,0,0,2,1,0}, CM_WAR },
     { "Leather Breeches", SLOT_LEGS,    RARITY_COMMON,      1,   10, { 0,1,0,0,0,0,1}, CM_ROG },
@@ -461,10 +461,10 @@ static const ItemDef ITEMS[] = {
     { "Nightweave Pants", SLOT_LEGS,    RARITY_RARE,       32,  800, { 0,10,0,0,3,0,8}, CM_ROG },
     { "Voidweave Pants",  SLOT_LEGS,    RARITY_RARE,       32,  800, { 0,0,12,6,0,0,3}, CM_MAG },
     { "Seraph's Cuisses", SLOT_LEGS,    RARITY_RARE,       32,  800, { 0,0,0,10,8,5,0}, CM_PRI },
-    { "Bonecage Greaves", SLOT_LEGS,    RARITY_EPIC,       46, 3200, { 8,0,0,0,18,24,0}, CM_WAR },
-    { "Phantom Legwraps", SLOT_LEGS,    RARITY_EPIC,       46, 3200, { 0,16,0,0,4,0,14}, CM_ROG },
-    { "Leggings of Stars",SLOT_LEGS,    RARITY_EPIC,       46, 3200, { 0,0,20,10,0,0,5}, CM_MAG },
-    { "Divine Greaves",   SLOT_LEGS,    RARITY_EPIC,       46, 3200, { 0,0,0,16,12,8,0}, CM_PRI },
+    { "Bonecage Greaves", SLOT_LEGS,    RARITY_EPIC,       46, 9600, { 8,0,0,0,18,24,0}, CM_WAR },
+    { "Phantom Legwraps", SLOT_LEGS,    RARITY_EPIC,       46, 9600, { 0,16,0,0,4,0,14}, CM_ROG },
+    { "Leggings of Stars",SLOT_LEGS,    RARITY_EPIC,       46, 9600, { 0,0,20,10,0,0,5}, CM_MAG },
+    { "Divine Greaves",   SLOT_LEGS,    RARITY_EPIC,       46, 9600, { 0,0,0,16,12,8,0}, CM_PRI },
 
     { "Iron Boots",       SLOT_BOOTS,   RARITY_COMMON,      1,    8, { 0,0,0,0,0,1,1}, CM_WAR },
     { "Soft Boots",       SLOT_BOOTS,   RARITY_COMMON,      1,    8, { 0,1,0,0,0,0,2}, CM_ROG },
@@ -482,117 +482,117 @@ static const ItemDef ITEMS[] = {
     { "Nightwalkers",     SLOT_BOOTS,   RARITY_RARE,       32,  750, { 0,6,0,0,3,0,12}, CM_ROG },
     { "Voidwalkers",      SLOT_BOOTS,   RARITY_RARE,       32,  750, { 0,0,6,4,0,0,8}, CM_MAG },
     { "Seraph's Steps",   SLOT_BOOTS,   RARITY_RARE,       32,  750, { 0,0,0,6,5,0,6}, CM_PRI },
-    { "Titanstep Boots",  SLOT_BOOTS,   RARITY_EPIC,       46, 3000, { 0,0,0,0,8,12,10}, CM_WAR },
-    { "Phantom Stride",   SLOT_BOOTS,   RARITY_EPIC,       46, 3000, { 0,10,0,0,4,0,20}, CM_ROG },
-    { "Steps of Eternity",SLOT_BOOTS,   RARITY_EPIC,       46, 3000, { 0,0,10,6,0,0,14}, CM_MAG },
-    { "Divine Striders",  SLOT_BOOTS,   RARITY_EPIC,       46, 3000, { 0,0,0,10,8,0,10}, CM_PRI },
+    { "Titanstep Boots",  SLOT_BOOTS,   RARITY_EPIC,       46, 9000, { 0,0,0,0,8,12,10}, CM_WAR },
+    { "Phantom Stride",   SLOT_BOOTS,   RARITY_EPIC,       46, 9000, { 0,10,0,0,4,0,20}, CM_ROG },
+    { "Steps of Eternity",SLOT_BOOTS,   RARITY_EPIC,       46, 9000, { 0,0,10,6,0,0,14}, CM_MAG },
+    { "Divine Striders",  SLOT_BOOTS,   RARITY_EPIC,       46, 9000, { 0,0,0,10,8,0,10}, CM_PRI },
 
     { "Copper Band",      SLOT_RING,    RARITY_COMMON,      1,   12, { 1,1,0,0,0,0,0}, CM_ALL },
     { "Silver Ring",      SLOT_RING,    RARITY_UNCOMMON,    8,   60, { 3,3,0,0,0,0,0}, CM_ALL },
     { "Signet of Might",  SLOT_RING,    RARITY_RARE,       18,  240, { 6,0,0,0,4,3,0}, CM_ALL },
     { "Band of Suffering",SLOT_RING,    RARITY_RARE,       32,  900, { 8,8,0,0,0,0,5}, CM_ALL },
-    { "Ring of the Lich", SLOT_RING,    RARITY_EPIC,       46, 3800, { 0,0,15,15,8,0,0}, CM_ALL },
+    { "Ring of the Lich", SLOT_RING,    RARITY_EPIC,       46, 11400, { 0,0,15,15,8,0,0}, CM_ALL },
 
     { "Bone Charm",       SLOT_AMULET,  RARITY_COMMON,      1,   12, { 0,0,0,0,2,0,0}, CM_ALL },
     { "Jade Pendant",     SLOT_AMULET,  RARITY_UNCOMMON,    8,   60, { 0,0,3,3,0,0,0}, CM_ALL },
     { "Bloodstone Amulet",SLOT_AMULET,  RARITY_RARE,       18,  240, { 0,0,0,4,6,3,0}, CM_ALL },
     { "Eye of Shadow",    SLOT_AMULET,  RARITY_RARE,       32,  900, { 0,0,10,8,0,0,3}, CM_ALL },
-    { "Heart of Eternity",SLOT_AMULET,  RARITY_EPIC,       46, 3800, { 0,0,0,12,15,8,0}, CM_ALL },
+    { "Heart of Eternity",SLOT_AMULET,  RARITY_EPIC,       46, 11400, { 0,0,0,12,15,8,0}, CM_ALL },
 
-    { "Molten Greatsword",SLOT_WEAPON,  RARITY_EPIC,       55, 8000, {50,0,0,0,16,8,0}, CM_WAR },
-    { "Magma Fang",       SLOT_WEAPON,  RARITY_EPIC,       55, 8000, { 8,50,0,0,0,0,16}, CM_ROG },
-    { "Flameheart Staff", SLOT_WEAPON,  RARITY_EPIC,       55, 8000, { 0,0,50,16,0,0,8}, CM_MAG },
-    { "Ember Scepter",    SLOT_WEAPON,  RARITY_EPIC,       55, 8000, { 0,0,16,50,8,0,0}, CM_PRI },
-    { "Frostbite Cleaver",SLOT_WEAPON,  RARITY_EPIC,       66,15000, {65,0,0,0,20,12,0}, CM_WAR },
-    { "Icicle Shiv",      SLOT_WEAPON,  RARITY_EPIC,       66,15000, {10,65,0,0,0,0,20}, CM_ROG },
-    { "Frozen Scepter",   SLOT_WEAPON,  RARITY_EPIC,       66,15000, { 0,0,65,20,0,0,10}, CM_MAG },
-    { "Glacial Wand",     SLOT_WEAPON,  RARITY_EPIC,       66,15000, { 0,0,20,65,12,0,0}, CM_PRI },
-    { "Void Reaver",      SLOT_WEAPON,  RARITY_EPIC,       78,28000, {85,0,0,0,28,16,0}, CM_WAR },
-    { "Null Blade",       SLOT_WEAPON,  RARITY_EPIC,       78,28000, {14,85,0,0,0,0,28}, CM_ROG },
-    { "Void Orb",         SLOT_WEAPON,  RARITY_EPIC,       78,28000, { 0,0,85,28,0,0,14}, CM_MAG },
-    { "Void Censer",      SLOT_WEAPON,  RARITY_EPIC,       78,28000, { 0,0,28,85,16,0,0}, CM_PRI },
-    { "Eternity's Edge",  SLOT_WEAPON,  RARITY_LEGENDARY,  90,50000, {110,0,0,0,35,20,0}, CM_WAR },
-    { "Eternal Whisper",  SLOT_WEAPON,  RARITY_LEGENDARY,  90,50000, {18,110,0,0,0,0,35}, CM_ROG },
-    { "Staff of Ages",    SLOT_WEAPON,  RARITY_LEGENDARY,  90,50000, { 0,0,110,35,0,0,18}, CM_MAG },
-    { "Eternal Grace",    SLOT_WEAPON,  RARITY_LEGENDARY,  90,50000, { 0,0,35,110,20,0,0}, CM_PRI },
+    { "Molten Greatsword",SLOT_WEAPON,  RARITY_EPIC,       55, 24000, {50,0,0,0,16,8,0}, CM_WAR },
+    { "Magma Fang",       SLOT_WEAPON,  RARITY_EPIC,       55, 24000, { 8,50,0,0,0,0,16}, CM_ROG },
+    { "Flameheart Staff", SLOT_WEAPON,  RARITY_EPIC,       55, 24000, { 0,0,50,16,0,0,8}, CM_MAG },
+    { "Ember Scepter",    SLOT_WEAPON,  RARITY_EPIC,       55, 24000, { 0,0,16,50,8,0,0}, CM_PRI },
+    { "Frostbite Cleaver",SLOT_WEAPON,  RARITY_EPIC,       66,45000, {65,0,0,0,20,12,0}, CM_WAR },
+    { "Icicle Shiv",      SLOT_WEAPON,  RARITY_EPIC,       66,45000, {10,65,0,0,0,0,20}, CM_ROG },
+    { "Frozen Scepter",   SLOT_WEAPON,  RARITY_EPIC,       66,45000, { 0,0,65,20,0,0,10}, CM_MAG },
+    { "Glacial Wand",     SLOT_WEAPON,  RARITY_EPIC,       66,45000, { 0,0,20,65,12,0,0}, CM_PRI },
+    { "Void Reaver",      SLOT_WEAPON,  RARITY_EPIC,       78,84000, {85,0,0,0,28,16,0}, CM_WAR },
+    { "Null Blade",       SLOT_WEAPON,  RARITY_EPIC,       78,84000, {14,85,0,0,0,0,28}, CM_ROG },
+    { "Void Orb",         SLOT_WEAPON,  RARITY_EPIC,       78,84000, { 0,0,85,28,0,0,14}, CM_MAG },
+    { "Void Censer",      SLOT_WEAPON,  RARITY_EPIC,       78,84000, { 0,0,28,85,16,0,0}, CM_PRI },
+    { "Eternity's Edge",  SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, {110,0,0,0,35,20,0}, CM_WAR },
+    { "Eternal Whisper",  SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, {18,110,0,0,0,0,35}, CM_ROG },
+    { "Staff of Ages",    SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, { 0,0,110,35,0,0,18}, CM_MAG },
+    { "Eternal Grace",    SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, { 0,0,35,110,20,0,0}, CM_PRI },
 
-    { "Molten Warhelm",   SLOT_HELMET,  RARITY_EPIC,       55, 5500, { 5,0,0,0,18,20,0}, CM_WAR },
-    { "Magma Visor",      SLOT_HELMET,  RARITY_EPIC,       55, 5500, { 0,16,0,0,7,0,13}, CM_ROG },
-    { "Flamecrown",       SLOT_HELMET,  RARITY_EPIC,       55, 5500, { 0,0,20,10,4,0,0}, CM_MAG },
-    { "Ember Mitre",      SLOT_HELMET,  RARITY_EPIC,       55, 5500, { 0,0,0,18,12,9,0}, CM_PRI },
-    { "Frostguard Helm",  SLOT_HELMET,  RARITY_EPIC,       66,10000, { 8,0,0,0,24,28,0}, CM_WAR },
-    { "Icestalker Hood",  SLOT_HELMET,  RARITY_EPIC,       66,10000, { 0,20,0,0,9,0,17}, CM_ROG },
-    { "Frostweave Crown", SLOT_HELMET,  RARITY_EPIC,       66,10000, { 0,0,28,14,5,0,0}, CM_MAG },
-    { "Glacial Halo",     SLOT_HELMET,  RARITY_EPIC,       66,10000, { 0,0,0,24,16,12,0}, CM_PRI },
-    { "Voidforged Visor", SLOT_HELMET,  RARITY_EPIC,       78,18000, {10,0,0,0,30,36,0}, CM_WAR },
-    { "Null Mask",        SLOT_HELMET,  RARITY_EPIC,       78,18000, { 0,28,0,0,12,0,22}, CM_ROG },
-    { "Rift Diadem",      SLOT_HELMET,  RARITY_EPIC,       78,18000, { 0,0,36,18,7,0,0}, CM_MAG },
-    { "Void Circlet",     SLOT_HELMET,  RARITY_EPIC,       78,18000, { 0,0,0,30,20,16,0}, CM_PRI },
-    { "Helm of Ages",     SLOT_HELMET,  RARITY_LEGENDARY,  90,32000, {14,0,0,0,38,46,0}, CM_WAR },
-    { "Timeless Hood",    SLOT_HELMET,  RARITY_LEGENDARY,  90,32000, { 0,35,0,0,16,0,28}, CM_ROG },
-    { "Crown of Aeons",   SLOT_HELMET,  RARITY_LEGENDARY,  90,32000, { 0,0,46,24,9,0,0}, CM_MAG },
-    { "Eternal Aureole",  SLOT_HELMET,  RARITY_LEGENDARY,  90,32000, { 0,0,0,38,25,20,0}, CM_PRI },
+    { "Molten Warhelm",   SLOT_HELMET,  RARITY_EPIC,       55, 16500, { 5,0,0,0,18,20,0}, CM_WAR },
+    { "Magma Visor",      SLOT_HELMET,  RARITY_EPIC,       55, 16500, { 0,16,0,0,7,0,13}, CM_ROG },
+    { "Flamecrown",       SLOT_HELMET,  RARITY_EPIC,       55, 16500, { 0,0,20,10,4,0,0}, CM_MAG },
+    { "Ember Mitre",      SLOT_HELMET,  RARITY_EPIC,       55, 16500, { 0,0,0,18,12,9,0}, CM_PRI },
+    { "Frostguard Helm",  SLOT_HELMET,  RARITY_EPIC,       66,30000, { 8,0,0,0,24,28,0}, CM_WAR },
+    { "Icestalker Hood",  SLOT_HELMET,  RARITY_EPIC,       66,30000, { 0,20,0,0,9,0,17}, CM_ROG },
+    { "Frostweave Crown", SLOT_HELMET,  RARITY_EPIC,       66,30000, { 0,0,28,14,5,0,0}, CM_MAG },
+    { "Glacial Halo",     SLOT_HELMET,  RARITY_EPIC,       66,30000, { 0,0,0,24,16,12,0}, CM_PRI },
+    { "Voidforged Visor", SLOT_HELMET,  RARITY_EPIC,       78,54000, {10,0,0,0,30,36,0}, CM_WAR },
+    { "Null Mask",        SLOT_HELMET,  RARITY_EPIC,       78,54000, { 0,28,0,0,12,0,22}, CM_ROG },
+    { "Rift Diadem",      SLOT_HELMET,  RARITY_EPIC,       78,54000, { 0,0,36,18,7,0,0}, CM_MAG },
+    { "Void Circlet",     SLOT_HELMET,  RARITY_EPIC,       78,54000, { 0,0,0,30,20,16,0}, CM_PRI },
+    { "Helm of Ages",     SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, {14,0,0,0,38,46,0}, CM_WAR },
+    { "Timeless Hood",    SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, { 0,35,0,0,16,0,28}, CM_ROG },
+    { "Crown of Aeons",   SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, { 0,0,46,24,9,0,0}, CM_MAG },
+    { "Eternal Aureole",  SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, { 0,0,0,38,25,20,0}, CM_PRI },
 
-    { "Molten Cuirass",   SLOT_CHEST,   RARITY_EPIC,       55, 6500, { 8,0,0,0,28,32,0}, CM_WAR },
-    { "Magma Tunic",      SLOT_CHEST,   RARITY_EPIC,       55, 6500, { 0,24,0,0,10,0,20}, CM_ROG },
-    { "Flamewoven Robe",  SLOT_CHEST,   RARITY_EPIC,       55, 6500, { 0,0,32,16,6,0,0}, CM_MAG },
-    { "Ember Vestment",   SLOT_CHEST,   RARITY_EPIC,       55, 6500, { 0,0,0,28,18,14,0}, CM_PRI },
-    { "Frostplate Armor", SLOT_CHEST,   RARITY_EPIC,       66,12000, {12,0,0,0,36,42,0}, CM_WAR },
-    { "Iceweave Jerkin",  SLOT_CHEST,   RARITY_EPIC,       66,12000, { 0,32,0,0,14,0,26}, CM_ROG },
-    { "Frozen Robe",      SLOT_CHEST,   RARITY_EPIC,       66,12000, { 0,0,42,22,8,0,0}, CM_MAG },
-    { "Glacial Raiment",  SLOT_CHEST,   RARITY_EPIC,       66,12000, { 0,0,0,36,24,18,0}, CM_PRI },
-    { "Voidplate",        SLOT_CHEST,   RARITY_EPIC,       78,22000, {16,0,0,0,46,55,0}, CM_WAR },
-    { "Null Shroud",      SLOT_CHEST,   RARITY_EPIC,       78,22000, { 0,42,0,0,18,0,34}, CM_ROG },
-    { "Rift Robe",        SLOT_CHEST,   RARITY_EPIC,       78,22000, { 0,0,55,28,10,0,0}, CM_MAG },
-    { "Void Regalia",     SLOT_CHEST,   RARITY_EPIC,       78,22000, { 0,0,0,46,30,24,0}, CM_PRI },
-    { "Armor of Eternity",SLOT_CHEST,   RARITY_LEGENDARY,  90,40000, {22,0,0,0,58,70,0}, CM_WAR },
-    { "Timeless Garb",    SLOT_CHEST,   RARITY_LEGENDARY,  90,40000, { 0,54,0,0,24,0,44}, CM_ROG },
-    { "Robe of Aeons",    SLOT_CHEST,   RARITY_LEGENDARY,  90,40000, { 0,0,70,36,14,0,0}, CM_MAG },
-    { "Eternal Vestment", SLOT_CHEST,   RARITY_LEGENDARY,  90,40000, { 0,0,0,58,38,30,0}, CM_PRI },
+    { "Molten Cuirass",   SLOT_CHEST,   RARITY_EPIC,       55, 19500, { 8,0,0,0,28,32,0}, CM_WAR },
+    { "Magma Tunic",      SLOT_CHEST,   RARITY_EPIC,       55, 19500, { 0,24,0,0,10,0,20}, CM_ROG },
+    { "Flamewoven Robe",  SLOT_CHEST,   RARITY_EPIC,       55, 19500, { 0,0,32,16,6,0,0}, CM_MAG },
+    { "Ember Vestment",   SLOT_CHEST,   RARITY_EPIC,       55, 19500, { 0,0,0,28,18,14,0}, CM_PRI },
+    { "Frostplate Armor", SLOT_CHEST,   RARITY_EPIC,       66,36000, {12,0,0,0,36,42,0}, CM_WAR },
+    { "Iceweave Jerkin",  SLOT_CHEST,   RARITY_EPIC,       66,36000, { 0,32,0,0,14,0,26}, CM_ROG },
+    { "Frozen Robe",      SLOT_CHEST,   RARITY_EPIC,       66,36000, { 0,0,42,22,8,0,0}, CM_MAG },
+    { "Glacial Raiment",  SLOT_CHEST,   RARITY_EPIC,       66,36000, { 0,0,0,36,24,18,0}, CM_PRI },
+    { "Voidplate",        SLOT_CHEST,   RARITY_EPIC,       78,66000, {16,0,0,0,46,55,0}, CM_WAR },
+    { "Null Shroud",      SLOT_CHEST,   RARITY_EPIC,       78,66000, { 0,42,0,0,18,0,34}, CM_ROG },
+    { "Rift Robe",        SLOT_CHEST,   RARITY_EPIC,       78,66000, { 0,0,55,28,10,0,0}, CM_MAG },
+    { "Void Regalia",     SLOT_CHEST,   RARITY_EPIC,       78,66000, { 0,0,0,46,30,24,0}, CM_PRI },
+    { "Armor of Eternity",SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, {22,0,0,0,58,70,0}, CM_WAR },
+    { "Timeless Garb",    SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, { 0,54,0,0,24,0,44}, CM_ROG },
+    { "Robe of Aeons",    SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, { 0,0,70,36,14,0,0}, CM_MAG },
+    { "Eternal Vestment", SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, { 0,0,0,58,38,30,0}, CM_PRI },
 
-    { "Molten Legguards", SLOT_LEGS,    RARITY_EPIC,       55, 5000, { 6,0,0,0,22,26,0}, CM_WAR },
-    { "Magma Leggings",   SLOT_LEGS,    RARITY_EPIC,       55, 5000, { 0,20,0,0,8,0,16}, CM_ROG },
-    { "Flamewoven Pants", SLOT_LEGS,    RARITY_EPIC,       55, 5000, { 0,0,26,12,5,0,0}, CM_MAG },
-    { "Ember Greaves",    SLOT_LEGS,    RARITY_EPIC,       55, 5000, { 0,0,0,22,14,11,0}, CM_PRI },
-    { "Frostguard Greaves",SLOT_LEGS,   RARITY_EPIC,       66, 9000, {10,0,0,0,28,34,0}, CM_WAR },
-    { "Icestalker Pants", SLOT_LEGS,    RARITY_EPIC,       66, 9000, { 0,26,0,0,12,0,20}, CM_ROG },
-    { "Frostweave Legs",  SLOT_LEGS,    RARITY_EPIC,       66, 9000, { 0,0,34,18,6,0,0}, CM_MAG },
-    { "Glacial Cuisses",  SLOT_LEGS,    RARITY_EPIC,       66, 9000, { 0,0,0,28,20,14,0}, CM_PRI },
-    { "Voidforged Greaves",SLOT_LEGS,   RARITY_EPIC,       78,16000, {12,0,0,0,36,44,0}, CM_WAR },
-    { "Null Legwraps",    SLOT_LEGS,    RARITY_EPIC,       78,16000, { 0,34,0,0,14,0,28}, CM_ROG },
-    { "Rift Leggings",    SLOT_LEGS,    RARITY_EPIC,       78,16000, { 0,0,44,22,8,0,0}, CM_MAG },
-    { "Void Greaves",     SLOT_LEGS,    RARITY_EPIC,       78,16000, { 0,0,0,36,24,20,0}, CM_PRI },
-    { "Greaves of Ages",  SLOT_LEGS,    RARITY_LEGENDARY,  90,28000, {18,0,0,0,46,56,0}, CM_WAR },
-    { "Timeless Legwraps",SLOT_LEGS,    RARITY_LEGENDARY,  90,28000, { 0,44,0,0,20,0,36}, CM_ROG },
-    { "Leggings of Aeons",SLOT_LEGS,    RARITY_LEGENDARY,  90,28000, { 0,0,56,28,12,0,0}, CM_MAG },
-    { "Eternal Greaves",  SLOT_LEGS,    RARITY_LEGENDARY,  90,28000, { 0,0,0,46,30,24,0}, CM_PRI },
+    { "Molten Legguards", SLOT_LEGS,    RARITY_EPIC,       55, 15000, { 6,0,0,0,22,26,0}, CM_WAR },
+    { "Magma Leggings",   SLOT_LEGS,    RARITY_EPIC,       55, 15000, { 0,20,0,0,8,0,16}, CM_ROG },
+    { "Flamewoven Pants", SLOT_LEGS,    RARITY_EPIC,       55, 15000, { 0,0,26,12,5,0,0}, CM_MAG },
+    { "Ember Greaves",    SLOT_LEGS,    RARITY_EPIC,       55, 15000, { 0,0,0,22,14,11,0}, CM_PRI },
+    { "Frostguard Greaves",SLOT_LEGS,   RARITY_EPIC,       66, 27000, {10,0,0,0,28,34,0}, CM_WAR },
+    { "Icestalker Pants", SLOT_LEGS,    RARITY_EPIC,       66, 27000, { 0,26,0,0,12,0,20}, CM_ROG },
+    { "Frostweave Legs",  SLOT_LEGS,    RARITY_EPIC,       66, 27000, { 0,0,34,18,6,0,0}, CM_MAG },
+    { "Glacial Cuisses",  SLOT_LEGS,    RARITY_EPIC,       66, 27000, { 0,0,0,28,20,14,0}, CM_PRI },
+    { "Voidforged Greaves",SLOT_LEGS,   RARITY_EPIC,       78,48000, {12,0,0,0,36,44,0}, CM_WAR },
+    { "Null Legwraps",    SLOT_LEGS,    RARITY_EPIC,       78,48000, { 0,34,0,0,14,0,28}, CM_ROG },
+    { "Rift Leggings",    SLOT_LEGS,    RARITY_EPIC,       78,48000, { 0,0,44,22,8,0,0}, CM_MAG },
+    { "Void Greaves",     SLOT_LEGS,    RARITY_EPIC,       78,48000, { 0,0,0,36,24,20,0}, CM_PRI },
+    { "Greaves of Ages",  SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, {18,0,0,0,46,56,0}, CM_WAR },
+    { "Timeless Legwraps",SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, { 0,44,0,0,20,0,36}, CM_ROG },
+    { "Leggings of Aeons",SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, { 0,0,56,28,12,0,0}, CM_MAG },
+    { "Eternal Greaves",  SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, { 0,0,0,46,30,24,0}, CM_PRI },
 
-    { "Molten Sabatons",  SLOT_BOOTS,   RARITY_EPIC,       55, 4500, { 0,0,0,0,10,14,12}, CM_WAR },
-    { "Magma Treads",     SLOT_BOOTS,   RARITY_EPIC,       55, 4500, { 0,12,0,0,6,0,18}, CM_ROG },
-    { "Flamestep Shoes",  SLOT_BOOTS,   RARITY_EPIC,       55, 4500, { 0,0,12,8,0,0,14}, CM_MAG },
-    { "Ember Sandals",    SLOT_BOOTS,   RARITY_EPIC,       55, 4500, { 0,0,0,12,10,0,12}, CM_PRI },
-    { "Frostguard Boots", SLOT_BOOTS,   RARITY_EPIC,       66, 8000, { 0,0,0,0,14,18,16}, CM_WAR },
-    { "Icestalker Boots", SLOT_BOOTS,   RARITY_EPIC,       66, 8000, { 0,16,0,0,8,0,24}, CM_ROG },
-    { "Frostweave Shoes", SLOT_BOOTS,   RARITY_EPIC,       66, 8000, { 0,0,16,10,0,0,18}, CM_MAG },
-    { "Glacial Sandals",  SLOT_BOOTS,   RARITY_EPIC,       66, 8000, { 0,0,0,16,12,0,16}, CM_PRI },
-    { "Voidforged Boots", SLOT_BOOTS,   RARITY_EPIC,       78,14000, { 0,0,0,0,18,24,20}, CM_WAR },
-    { "Null Treads",      SLOT_BOOTS,   RARITY_EPIC,       78,14000, { 0,20,0,0,10,0,32}, CM_ROG },
-    { "Rift Walkers",     SLOT_BOOTS,   RARITY_EPIC,       78,14000, { 0,0,20,14,0,0,24}, CM_MAG },
-    { "Void Striders",    SLOT_BOOTS,   RARITY_EPIC,       78,14000, { 0,0,0,20,16,0,20}, CM_PRI },
-    { "Boots of Eternity",SLOT_BOOTS,   RARITY_LEGENDARY,  90,25000, { 0,0,0,0,24,30,26}, CM_WAR },
-    { "Timeless Stride",  SLOT_BOOTS,   RARITY_LEGENDARY,  90,25000, { 0,26,0,0,14,0,40}, CM_ROG },
-    { "Steps of Aeons",   SLOT_BOOTS,   RARITY_LEGENDARY,  90,25000, { 0,0,26,18,0,0,30}, CM_MAG },
-    { "Eternal Striders", SLOT_BOOTS,   RARITY_LEGENDARY,  90,25000, { 0,0,0,26,20,0,26}, CM_PRI },
+    { "Molten Sabatons",  SLOT_BOOTS,   RARITY_EPIC,       55, 13500, { 0,0,0,0,10,14,12}, CM_WAR },
+    { "Magma Treads",     SLOT_BOOTS,   RARITY_EPIC,       55, 13500, { 0,12,0,0,6,0,18}, CM_ROG },
+    { "Flamestep Shoes",  SLOT_BOOTS,   RARITY_EPIC,       55, 13500, { 0,0,12,8,0,0,14}, CM_MAG },
+    { "Ember Sandals",    SLOT_BOOTS,   RARITY_EPIC,       55, 13500, { 0,0,0,12,10,0,12}, CM_PRI },
+    { "Frostguard Boots", SLOT_BOOTS,   RARITY_EPIC,       66, 24000, { 0,0,0,0,14,18,16}, CM_WAR },
+    { "Icestalker Boots", SLOT_BOOTS,   RARITY_EPIC,       66, 24000, { 0,16,0,0,8,0,24}, CM_ROG },
+    { "Frostweave Shoes", SLOT_BOOTS,   RARITY_EPIC,       66, 24000, { 0,0,16,10,0,0,18}, CM_MAG },
+    { "Glacial Sandals",  SLOT_BOOTS,   RARITY_EPIC,       66, 24000, { 0,0,0,16,12,0,16}, CM_PRI },
+    { "Voidforged Boots", SLOT_BOOTS,   RARITY_EPIC,       78,42000, { 0,0,0,0,18,24,20}, CM_WAR },
+    { "Null Treads",      SLOT_BOOTS,   RARITY_EPIC,       78,42000, { 0,20,0,0,10,0,32}, CM_ROG },
+    { "Rift Walkers",     SLOT_BOOTS,   RARITY_EPIC,       78,42000, { 0,0,20,14,0,0,24}, CM_MAG },
+    { "Void Striders",    SLOT_BOOTS,   RARITY_EPIC,       78,42000, { 0,0,0,20,16,0,20}, CM_PRI },
+    { "Boots of Eternity",SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,0,0,0,24,30,26}, CM_WAR },
+    { "Timeless Stride",  SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,26,0,0,14,0,40}, CM_ROG },
+    { "Steps of Aeons",   SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,0,26,18,0,0,30}, CM_MAG },
+    { "Eternal Striders", SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,0,0,26,20,0,26}, CM_PRI },
 
-    { "Molten Band",      SLOT_RING,    RARITY_EPIC,       55, 6000, {12,12,0,0,0,0,6}, CM_ALL },
-    { "Frozen Signet",    SLOT_RING,    RARITY_EPIC,       66,11000, { 0,0,16,16,8,0,0}, CM_ALL },
-    { "Void Ring",        SLOT_RING,    RARITY_EPIC,       78,20000, { 0,10,0,0,14,10,10}, CM_ALL },
-    { "Eternal Band",     SLOT_RING,    RARITY_LEGENDARY,  90,36000, {15,15,15,15,0,0,0}, CM_ALL },
+    { "Molten Band",      SLOT_RING,    RARITY_EPIC,       55, 18000, {12,12,0,0,0,0,6}, CM_ALL },
+    { "Frozen Signet",    SLOT_RING,    RARITY_EPIC,       66,33000, { 0,0,16,16,8,0,0}, CM_ALL },
+    { "Void Ring",        SLOT_RING,    RARITY_EPIC,       78,60000, { 0,10,0,0,14,10,10}, CM_ALL },
+    { "Eternal Band",     SLOT_RING,    RARITY_LEGENDARY,  90,180000, {15,15,15,15,0,0,0}, CM_ALL },
 
-    { "Molten Pendant",   SLOT_AMULET,  RARITY_EPIC,       55, 6000, { 0,0,0,8,14,6,0}, CM_ALL },
-    { "Frozen Heart",     SLOT_AMULET,  RARITY_EPIC,       66,11000, { 0,0,10,10,10,6,0}, CM_ALL },
-    { "Void Locket",      SLOT_AMULET,  RARITY_EPIC,       78,20000, { 0,0,12,12,18,8,0}, CM_ALL },
-    { "Eternal Charm",    SLOT_AMULET,  RARITY_LEGENDARY,  90,36000, { 0,0,16,16,22,12,0}, CM_ALL }
+    { "Molten Pendant",   SLOT_AMULET,  RARITY_EPIC,       55, 18000, { 0,0,0,8,14,6,0}, CM_ALL },
+    { "Frozen Heart",     SLOT_AMULET,  RARITY_EPIC,       66,33000, { 0,0,10,10,10,6,0}, CM_ALL },
+    { "Void Locket",      SLOT_AMULET,  RARITY_EPIC,       78,60000, { 0,0,12,12,18,8,0}, CM_ALL },
+    { "Eternal Charm",    SLOT_AMULET,  RARITY_LEGENDARY,  90,180000, { 0,0,16,16,22,12,0}, CM_ALL }
 };
 
 static const int NUM_ITEMS_TOTAL = sizeof(ITEMS) / sizeof(ITEMS[0]);

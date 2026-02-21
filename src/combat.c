@@ -50,6 +50,7 @@ void combat_spawn(GameState *gs) {
         pick = dg->bossIdx;
         gs->bossActive = 1;
     } else {
+        if (dg->numEnemies <= 0) return;
         pick = dg->enemyIdx[rand() % dg->numEnemies];
         gs->bossActive = 0;
     }
@@ -160,7 +161,7 @@ static void try_boss_loot(GameState *gs) {
     int bossMaxRar = MOB_MAX_RARITY[gs->currentDungeon] + 1;
     if (bossMaxRar > RARITY_LEGENDARY) bossMaxRar = RARITY_LEGENDARY;
 
-    int byRarity[NUM_RARITIES][100];
+    int byRarity[NUM_RARITIES][256];
     int nByRarity[NUM_RARITIES];
     for (int r = 0; r < NUM_RARITIES; r++) nByRarity[r] = 0;
 
@@ -170,7 +171,7 @@ static void try_boss_loot(GameState *gs) {
             it->rarity <= bossMaxRar &&
             (it->classMask == 0 || (it->classMask & classMask))) {
             int r = it->rarity;
-            if (r >= 0 && r < NUM_RARITIES && nByRarity[r] < 100)
+            if (r >= 0 && r < NUM_RARITIES && nByRarity[r] < 256)
                 byRarity[r][nByRarity[r]++] = i;
         }
     }
@@ -241,7 +242,7 @@ static void apply_skill(GameState *gs, const SkillDef *sk) {
         for (int i = 0; i < hits; i++) {
             int d = dmg_variance((int)(es.damage * sk->dmgMul));
             if (!sk->ignoreArmor) {
-                int arm = (int)(e->defense * es.dmgReduction);
+                int arm = (int)(e->defense * e->defense / (e->defense + 100.0f));
                 d -= arm;
             }
             if (d < 1) d = 1;
@@ -338,7 +339,7 @@ void combat_try_skills(GameState *gs) {
  *   1. Boss/death timer gates (return early if counting down)
  *   2. Decrement skill cooldowns, regen resource
  *   3. Tick buffs (HoT/DoT), try skills (may kill enemy → goto enemy_killed)
- *   4. Normal attack: buff multipliers → crit check → armor reduction → deal damage
+ *   4. Normal attack: buff multipliers → crit check → enemy armor (DEF²/(DEF+100)) → deal damage
  *   5. If enemy dies: award gold (/4, min 1) + XP, loot, heal VIT*2, respawn/boss delay
  *   6. Enemy retaliation: dodge → immune → calculate damage → block → shield absorb → HP loss
  *   7. Hero death: lose 10% gold, reset dungeon kills, start revive timer
@@ -401,7 +402,7 @@ void combat_tick(GameState *gs) {
         baseDmg = (int)(baseDmg * cm);
     }
 
-    int armored = (int)(e->defense * es.dmgReduction);
+    int armored = (int)(e->defense * e->defense / (e->defense + 100.0f));
     int finalDmg = baseDmg - armored;
     if (finalDmg < 1) finalDmg = 1;
     e->hp -= finalDmg;
@@ -477,13 +478,15 @@ enemy_killed:
     int reduced = (int)(eDmg * es.dmgReduction);
     eDmg -= reduced;
     eDmg -= es.flatDmgReduce;
+    if (eDmg < 1) eDmg = 1;
 
     if (es.blockChance > 0 && randf() < es.blockChance) {
         eDmg = (int)(eDmg * (1.0f - es.blockReduction));
-        snprintf(buf, sizeof(buf), "%s hits you for %d. [BLOCK]", e->name, eDmg < 1 ? 1 : eDmg);
+        if (eDmg < 1) eDmg = 1;
+        snprintf(buf, sizeof(buf), "%s hits you for %d. [BLOCK]", e->name, eDmg);
         ui_log(gs, buf, CP_YELLOW);
     } else {
-        snprintf(buf, sizeof(buf), "%s hits you for %d.", e->name, eDmg < 1 ? 1 : eDmg);
+        snprintf(buf, sizeof(buf), "%s hits you for %d.", e->name, eDmg);
         ui_log(gs, buf, CP_RED);
     }
 
@@ -492,7 +495,6 @@ enemy_killed:
         snprintf(buf, sizeof(buf), "Mana Shield absorbs %d damage!", eDmg);
         ui_log(gs, buf, CP_MAGENTA);
     } else {
-        if (eDmg < 1) eDmg = 1;
         for (int i = 0; i < h->numBuffs && eDmg > 0; i++) {
             if (h->buffs[i].shieldHp > 0) {
                 if (h->buffs[i].shieldHp >= eDmg) {

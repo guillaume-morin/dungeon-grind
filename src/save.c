@@ -26,11 +26,11 @@
 #endif
 
 #define SAVE_MAGIC  0x44475256  /* "DGRV" */
-#define SAVE_VER    4
+#define SAVE_VER    5
 
 /* Return platform-specific save directory: ~/.dungeon-grind or %APPDATA%\.dungeon-grind. */
 static const char *save_dir(void) {
-    static char path[256];
+    static char path[4096];
 #if defined(_WIN32)
     const char *home = getenv("APPDATA");
     if (!home) home = getenv("USERPROFILE");
@@ -43,7 +43,7 @@ static const char *save_dir(void) {
 }
 
 static const char *save_slot_path(int slot) {
-    static char path[256];
+    static char path[4096];
     snprintf(path, sizeof(path), "%s/save%d.dat", save_dir(), slot + 1);
     return path;
 }
@@ -86,9 +86,9 @@ int load_game(GameState *gs) {
     if (fread(&loaded, sizeof(Hero), 1, f) != 1) { fclose(f); return 0; }
     gs->hero = loaded;
 
-    fread(&gs->currentDungeon, sizeof(int), 1, f);
-    fread(&gs->inDungeon, sizeof(int), 1, f);
-    fread(&gs->dungeonKills, sizeof(int), 1, f);
+    if (fread(&gs->currentDungeon, sizeof(int), 1, f) != 1) gs->currentDungeon = 0;
+    if (fread(&gs->inDungeon, sizeof(int), 1, f) != 1) gs->inDungeon = 0;
+    if (fread(&gs->dungeonKills, sizeof(int), 1, f) != 1) gs->dungeonKills = 0;
 
     fclose(f);
 

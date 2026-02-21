@@ -35,7 +35,9 @@ static void draw_bar(WINDOW *w, int y, int x, int width, int cur, int max, int c
 }
 
 void ui_init(GameState *gs) {
+#ifndef PDC_BUILD
     set_escdelay(25);
+#endif
     initscr();
     cbreak();
     noecho();
@@ -769,7 +771,7 @@ static void render_ency_classes_detail(GameState *gs) {
               cd->baseHp, cd->hpPerLevel, cd->resourceName, cd->baseResource, cd->maxResource);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
-    char growthBuf[80];
+    char growthBuf[128];
     int pos = 0;
     pos += snprintf(growthBuf + pos, sizeof(growthBuf) - pos, "Growth:");
     for (int s = 0; s < NUM_STATS; s++) {
@@ -1566,10 +1568,11 @@ static void render_skills(GameState *gs) {
     wattron(w, COLOR_PAIR(CP_CYAN));
     mvwprintw(w, PANEL_H - 3, 2, "[Enter] Choose");
     if (hasAny) {
-        int canReset = gs->hero.talentPoints >= 10;
+        int resetCost = gs->hero.level * 50;
+        int canReset = gs->hero.gold >= resetCost;
         wattroff(w, COLOR_PAIR(CP_CYAN));
         wattron(w, COLOR_PAIR(canReset ? CP_CYAN : CP_RED));
-        mvwprintw(w, PANEL_H - 3, 17, "[R] Reset 10TP");
+        mvwprintw(w, PANEL_H - 3, 17, "[R] Reset %dG", resetCost);
         wattroff(w, COLOR_PAIR(canReset ? CP_CYAN : CP_RED));
         wattron(w, COLOR_PAIR(CP_CYAN));
     }
@@ -2105,12 +2108,15 @@ void ui_handle_key(GameState *gs, int ch) {
             int hasAny = 0;
             for (int t = 0; t < MAX_SKILL_TIERS; t++)
                 if (gs->hero.skillChoices[t] >= 0) { hasAny = 1; break; }
-            if (hasAny && gs->hero.talentPoints >= 10) {
-                gs->hero.talentPoints -= 10;
+            int resetCost = gs->hero.level * 50;
+            if (hasAny && gs->hero.gold >= resetCost) {
+                gs->hero.gold -= resetCost;
                 for (int t = 0; t < MAX_SKILL_TIERS; t++)
                     gs->hero.skillChoices[t] = -1;
                 memset(gs->hero.skillCooldowns, 0, sizeof(gs->hero.skillCooldowns));
-                ui_log(gs, "Skills reset! (-10 Talent Points)", CP_YELLOW);
+                char rbuf[LOG_LINE_W + 1];
+                snprintf(rbuf, sizeof(rbuf), "Skills reset! (-%dG)", resetCost);
+                ui_log(gs, rbuf, CP_YELLOW);
             }
         }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 2; }

@@ -57,6 +57,7 @@
 #define SOFT_CAP        30
 #define BOSS_THRESHOLD  50
 #define BOSS_DELAY      6
+#define MAX_LEVEL       99
 
 /* ── enums ─────────────────────────────────────────────────────────── */
 

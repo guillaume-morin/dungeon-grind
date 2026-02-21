@@ -8,11 +8,10 @@
  * each call. This avoids stale-cache bugs at the cost of recalculation
  * (trivial for 7 stats × 7 slots).
  *
- * Talent soft cap: past SOFT_CAP (30), overflow is halved with integer
- * division: SOFT_CAP + (overflow / 2). This means every OTHER point past
- * 30 produces no visible stat change (e.g. 31→15+30=45, 32→16+30=46,
- * but the float formulas may not produce a different result for +1).
- * The UI searches for the minimum increment that actually changes a stat.
+ * Talent soft cap: past SOFT_CAP (30), overflow is halved with float
+ * math: SOFT_CAP + (overflow * 0.5). Every point past 30 still counts
+ * (no dead zones from integer division). The UI searches for the minimum
+ * increment that actually changes a derived stat.
  *
  * hero_equip() auto-moves the old equipped item to inventory. The CALLER
  * must then remove the source item from inventory to avoid duplication.
@@ -49,10 +48,10 @@ Hero hero_create(int classId, const char *name) {
  * Stat pipeline:
  *   1. For each stat: base + soft-capped talents + equipment sum
  *      Soft cap: past 30 pts, overflow is halved via integer division.
- *   2. Primary-stat-based damage (class-specific override for mage/priest/rogue)
+ *   2. Primary-stat-based damage (class-specific: mage INT*1.5+WIS*0.5, priest WIS*1.2+INT*0.5, rogue AGI*1.4+STR*0.4)
  *   3. Derived rates: crit (AGI/200), dodge (AGI/300), block (DEF/250, warrior only),
- *      DR (DEF/(DEF+100)), tick rate (800 - SPD*8, min 300ms),
- *      XP multiplier (1 + INT*0.002), flat damage reduce (WIS*0.15)
+ *      DR (DEF/(DEF+100)), tick rate (asymptotic 300+500/(1+SPD*0.02)),
+ *      XP multiplier (1 + INT*0.005), flat damage reduce (WIS*0.15 scaled by level)
  */
 EStats hero_effective_stats(const Hero *h) {
     EStats es;
@@ -62,7 +61,7 @@ EStats hero_effective_stats(const Hero *h) {
     for (int i = 0; i < NUM_STATS; i++) {
         int base = cd->baseStats[i];
         int tal  = h->talents[i];
-        if (tal > SOFT_CAP) tal = SOFT_CAP + (tal - SOFT_CAP) / 2;
+        if (tal > SOFT_CAP) tal = SOFT_CAP + (int)((tal - SOFT_CAP) * 0.5f);
 
         int eq = 0;
         for (int s = 0; s < NUM_SLOTS; s++)
@@ -80,15 +79,14 @@ EStats hero_effective_stats(const Hero *h) {
     es.blockChance = (h->classId == CLASS_WARRIOR) ? fminf(0.30f, es.stats[DEF] / 250.0f) : 0;
     es.blockReduction = 0.30f;
     es.dmgReduction   = fminf(0.50f, es.stats[DEF] / (es.stats[DEF] + 100.0f));
-    es.tickRate = 800 - es.stats[SPD] * 8;
-    if (es.tickRate < 300) es.tickRate = 300;
+    es.tickRate = 300 + (int)(500.0f / (1.0f + es.stats[SPD] * 0.02f));
     es.healPower = 0;
-    es.xpMultiplier = 1.0f + es.stats[INT_] * 0.002f;
-    es.flatDmgReduce = (int)(es.stats[WIS] * 0.15f);
+    es.xpMultiplier = 1.0f + es.stats[INT_] * 0.005f;
+    es.flatDmgReduce = (int)(es.stats[WIS] * 0.15f * (1.0f + h->level / 30.0f));
 
     switch (h->classId) {
     case CLASS_MAGE:
-        es.damage = (int)(es.stats[INT_] * 1.8f + es.stats[WIS] * 0.3f);
+        es.damage = (int)(es.stats[INT_] * 1.5f + es.stats[WIS] * 0.5f);
         break;
     case CLASS_PRIEST:
         es.damage = (int)(es.stats[WIS] * 1.2f + es.stats[INT_] * 0.5f);
@@ -104,9 +102,9 @@ EStats hero_effective_stats(const Hero *h) {
     return es;
 }
 
-/* Linear XP curve: 50*level + 50. Level 1 needs 100 XP, level 50 needs 2550. */
+/* Quadratic XP curve: scales smoothly — level 1 needs 75, level 50 needs 12,550, level 90 needs 40,550. */
 int hero_xp_needed(int level) {
-    return 50 * level + 50;
+    return 5 * level * level + 50;
 }
 
 float hero_xp_pct(const Hero *h) {
@@ -126,7 +124,7 @@ int hero_add_xp(GameState *gs, int amount) {
     h->totalXpEarned += amount;
     int leveled = 0;
 
-    while (h->xp >= hero_xp_needed(h->level)) {
+    while (h->xp >= hero_xp_needed(h->level) && h->level < MAX_LEVEL) {
         h->xp -= hero_xp_needed(h->level);
         h->level++;
         h->talentPoints++;
