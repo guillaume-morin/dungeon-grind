@@ -61,3 +61,66 @@ const char *data_stat_short(int s)   { return (s>=0 && s<NUM_STATS)    ? STAT_SH
 const char *data_rarity_name(int r)  { return (r>=0 && r<NUM_RARITIES) ? RARITY_NAMES[r] : "?"; }
 int         data_rarity_color(int r) { return (r>=0 && r<NUM_RARITIES) ? RARITY_COLS[r]  : CP_WHITE; }
 const char *data_slot_name(int s)    { return (s>=0 && s<NUM_SLOTS)    ? SLOT_NAMES[s]   : "?"; }
+
+/* ── achievements ─────────────────────────────────────────────────── */
+
+static const AchievementDef ACHIEVEMENTS[NUM_ACHIEVEMENTS] = {
+    { "First Blood",       "Kill your first enemy",           0, 10 },
+    { "Centurion",         "Kill 100 enemies",                1,  2 },
+    { "Slayer",            "Kill 1000 enemies",               1,  3 },
+    { "Genocide",          "Kill 5000 enemies",               1,  5 },
+    { "Boss Hunter",       "Kill your first boss",            0, 25 },
+    { "Boss Slayer",       "Kill 10 bosses",                  0, 50 },
+    { "Conqueror",         "Kill every dungeon boss",         2,  3 },
+    { "Apprentice",        "Reach level 10",                  0, 15 },
+    { "Veteran",           "Reach level 25",                  0, 30 },
+    { "Champion",          "Reach level 50",                  1,  4 },
+    { "Legend",            "Reach level 75",                   2,  5 },
+    { "Transcendent",      "Reach level 99",                  0,100 },
+    { "Fully Geared",      "Equip all 7 slots",               0, 20 },
+    { "Epic Collector",    "All equipment Epic or better",     1,  5 },
+    { "Legendary Hero",    "All equipment Legendary",          2, 10 },
+    { "Merchant",          "Earn 10,000 total gold",           0, 30 },
+    { "Tycoon",            "Earn 100,000 total gold",          1,  5 },
+    { "Resilient",         "Die 10 times",                     0, 50 },
+    { "Elite Slayer",      "Kill an elite enemy",              1,  3 },
+    { "Hardened",          "Clear a dungeon on hard mode",     2,  5 },
+};
+
+const AchievementDef *data_achievement(int id) {
+    return (id >= 0 && id < NUM_ACHIEVEMENTS) ? &ACHIEVEMENTS[id] : NULL;
+}
+
+/* ── titles ───────────────────────────────────────────────────────── */
+
+static const TitleDef TITLES[NUM_TITLES] = {
+    { "the Blooded",        0 },
+    { "the Slayer",         2 },
+    { "Bosswalker",         5 },
+    { "Conqueror",          6 },
+    { "the Veteran",        8 },
+    { "Champion",           9 },
+    { "the Legend",        10 },
+    { "the Transcendent",  11 },
+    { "the Legendary",    14 },
+    { "the Hardened",      19 },
+};
+
+const TitleDef *data_title(int id) {
+    return (id >= 0 && id < NUM_TITLES) ? &TITLES[id] : NULL;
+}
+
+/* ── dungeon affixes ──────────────────────────────────────────────── */
+
+static const char *AFFIX_NAMES[NUM_AFFIXES] = {
+    "Fortified",
+    "Raging",
+    "Cursed",
+    "Thorny",
+    "Frenzied",
+    "Draining",
+};
+
+const char *data_affix_name(int id) {
+    return (id >= 0 && id < NUM_AFFIXES) ? AFFIX_NAMES[id] : "?";
+}

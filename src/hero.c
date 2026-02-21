@@ -99,6 +99,24 @@ EStats hero_effective_stats(const Hero *h) {
     default:
         break;
     }
+
+    int achBonusHp = 0, achBonusDmgPct = 0, achBonusXpPct = 0;
+    for (int a = 0; a < NUM_ACHIEVEMENTS; a++) {
+        if (!ACH_HAS(h, a)) continue;
+        const AchievementDef *ad = data_achievement(a);
+        if (!ad) continue;
+        switch (ad->bonusType) {
+        case 0: achBonusHp     += ad->bonusValue; break;
+        case 1: achBonusDmgPct += ad->bonusValue; break;
+        case 2: achBonusXpPct  += ad->bonusValue; break;
+        }
+    }
+    es.maxHp += achBonusHp;
+    if (achBonusDmgPct > 0)
+        es.damage = es.damage * (100 + achBonusDmgPct) / 100;
+    if (achBonusXpPct > 0)
+        es.xpMultiplier *= (100 + achBonusXpPct) / 100.0f;
+
     return es;
 }
 

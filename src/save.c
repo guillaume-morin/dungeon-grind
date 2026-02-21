@@ -26,7 +26,7 @@
 #endif
 
 #define SAVE_MAGIC  0x44475256  /* "DGRV" */
-#define SAVE_VER    6
+#define SAVE_VER    7
 
 /* Return platform-specific save directory: ~/.dungeon-grind or %APPDATA%\.dungeon-grind. */
 static const char *save_dir(void) {
@@ -64,6 +64,7 @@ int save_game(const GameState *gs) {
     fwrite(&gs->currentDungeon, sizeof(int), 1, f);
     fwrite(&gs->inDungeon, sizeof(int), 1, f);
     fwrite(&gs->dungeonKills, sizeof(int), 1, f);
+    fwrite(&gs->hardModeActive, sizeof(int), 1, f);
 
     fclose(f);
     return 1;
@@ -89,6 +90,7 @@ int load_game(GameState *gs) {
     if (fread(&gs->currentDungeon, sizeof(int), 1, f) != 1) gs->currentDungeon = 0;
     if (fread(&gs->inDungeon, sizeof(int), 1, f) != 1) gs->inDungeon = 0;
     if (fread(&gs->dungeonKills, sizeof(int), 1, f) != 1) gs->dungeonKills = 0;
+    if (fread(&gs->hardModeActive, sizeof(int), 1, f) != 1) gs->hardModeActive = 0;
 
     fclose(f);
 

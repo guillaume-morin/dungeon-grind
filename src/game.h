@@ -16,6 +16,8 @@
 /* PDCurses (Windows) and ncurses (macOS/Linux) share the curses API.
  * PDCurses provides <curses.h>; ncurses provides both <ncurses.h> and
  * <curses.h>. We use <curses.h> as the portable common denominator. */
+#include <stdint.h>
+
 #if defined(_WIN32)
 #include <curses.h>
 #else
@@ -59,6 +61,10 @@
 #define BOSS_DELAY      6
 #define MAX_LEVEL       99
 
+#define NUM_ACHIEVEMENTS 20
+#define NUM_TITLES       10
+#define NUM_AFFIXES      6
+
 /* ── enums ─────────────────────────────────────────────────────────── */
 
 enum Stat    { STR, AGI, INT_, WIS, VIT, DEF, SPD };
@@ -75,7 +81,8 @@ enum Screen {
     SCR_CHARACTER, SCR_SKILLS, SCR_CONFIRM_QUIT,
     SCR_ENCYCLOPEDIA, SCR_ENCY_CLASSES, SCR_ENCY_STATS,
     SCR_ENCY_ITEMS, SCR_ENCY_ENEMIES, SCR_ENCY_BOSSES,
-    SCR_ENCY_SKILLS, SCR_ENCY_DUNGEONS, SCR_ENCY_COMBAT
+    SCR_ENCY_SKILLS, SCR_ENCY_DUNGEONS, SCR_ENCY_COMBAT,
+    SCR_ACHIEVEMENTS, SCR_TITLES
 };
 
 /* ── color pairs (CP_*) ───────────────────────────────────────────── */
@@ -174,6 +181,22 @@ typedef struct {
     int   enemyHpBelow;
 } SkillDef;
 
+typedef struct {
+    const char *name;
+    const char *description;
+    int  bonusType;     /* 0=maxHP flat, 1=dmg%, 2=xp% */
+    int  bonusValue;
+} AchievementDef;
+
+typedef struct {
+    const char *name;
+    int  achievementIdx; /* index into achievements array, -1 if special */
+} TitleDef;
+
+/* Achievement bitfield macros (128 bits across 4 uint32s). */
+#define ACH_HAS(h, n) ((h)->achievements[(n)/32] & (1u << ((n)%32)))
+#define ACH_SET(h, n) ((h)->achievements[(n)/32] |= (1u << ((n)%32)))
+
 /* ── runtime objects ──────────────────────────────────────────────── */
 
 typedef struct {
@@ -235,6 +258,13 @@ typedef struct {
     int  totalKills, deaths;
     int  totalGoldEarned, totalXpEarned;
     int  highestLevel;
+
+    uint32_t achievements[4];
+    int  activeTitle;
+    int  hardMode[NUM_DUNGEONS];
+    int  bossKills[NUM_DUNGEONS];
+    int  eliteKills;
+    int  hardModeClears;
 } Hero;
 
 typedef struct {
@@ -278,6 +308,15 @@ typedef struct {
     int     dungeonKills;
     int     bossActive;
     int     bossTimer;
+
+    int     isElite;
+    int     combatDmgDealt;
+    int     combatDmgTaken;
+    int     combatHealed;
+    int     combatTicks;
+    int     hardModeActive;
+    int     wantHardMode;
+    int     activeAffixes[2];
 
     char    nameBuf[MAX_NAME];
     int     nameLen;
@@ -373,5 +412,11 @@ void                data_shop_item(ItemDef *out, int slot, int level, int classI
 const SkillDef     *data_skill(int classId, int tier, int option);
 /* Required hero level for the given skill tier (10, 20, 30, 40, 50, 60). */
 int                 data_skill_level(int tier);
+
+const AchievementDef *data_achievement(int id);
+const TitleDef       *data_title(int id);
+const char           *data_affix_name(int id);
+
+void    check_achievements(GameState *gs);
 
 #endif /* GAME_H */
