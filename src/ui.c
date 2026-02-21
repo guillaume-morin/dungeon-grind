@@ -670,7 +670,7 @@ static void render_character(GameState *gs) {
     mvwprintw(w, row++, 2, "Dodge %.1f%% DR %.1f%%", es.dodgeChance * 100, es.dmgReduction * 100);
     if (es.blockChance > 0)
         mvwprintw(w, row++, 2, "Block %.1f%%", es.blockChance * 100);
-    mvwprintw(w, row++, 2, "Tick %dms", es.tickRate);
+    mvwprintw(w, row++, 2, "Atk %.1f/s", 1000.0f / es.tickRate);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     row++;
@@ -931,7 +931,7 @@ static void render_ency_stats_detail(GameState *gs) {
         { "Increases heal power", "Flat DR of WIS*0.15", "Primary: Priest" },
         { "Increases max HP", "Heals VIT*2 HP per kill", "Benefits all classes" },
         { "Reduces damage taken", "Block chance (Warrior)", "Benefits all classes" },
-        { "Increases attack speed", "Lower tick = faster attacks", "Benefits all classes" }
+        { "Increases attack speed", "Higher SPD = more attacks/sec", "Benefits all classes" }
     };
 
     wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
@@ -1372,10 +1372,10 @@ static void render_ency_combat_detail(GameState *gs) {
     int row = 3;
     switch (gs->menuIdx) {
     case 0: /* Tick System */
-        mvwprintw(w, row++, 2, "Combat runs in ticks (timer-based).");
-        mvwprintw(w, row++, 2, "Each tick: cooldowns, buffs, skills, attack.");
-        mvwprintw(w, row++, 2, "Tick rate: 150 + 650/(1 + SPD*0.02) ms");
-        mvwprintw(w, row++, 2, "Higher SPD = faster ticks = more DPS.");
+        mvwprintw(w, row++, 2, "Combat runs in timed attack cycles.");
+        mvwprintw(w, row++, 2, "Each cycle: cooldowns, buffs, skills, hit.");
+        mvwprintw(w, row++, 2, "Base ~1.25 atk/s, scales with SPD stat.");
+        mvwprintw(w, row++, 2, "Higher SPD = more attacks per second.");
         break;
     case 1: /* Hero Damage — condense to 4 lines (wEnemy has 4 content rows) */
         mvwprintw(w, row++, 2, "War STR*1.5  Rog AGI*1.4+STR*0.4");
@@ -1663,10 +1663,10 @@ static void render_stat_detail(GameState *gs) {
 
     if (nxt.tickRate != cur.tickRate) {
         wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "Tick %dms", cur.tickRate);
+        mvwprintw(w, row, 2, "Atk %.1f/s", 1000.0f / cur.tickRate);
         wattroff(w, COLOR_PAIR(CP_WHITE));
         wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %dms", nxt.tickRate);
+        wprintw(w, " > %.1f/s", 1000.0f / nxt.tickRate);
         wattroff(w, COLOR_PAIR(CP_GREEN));
     }
     if (nxt.healPower != cur.healPower) {
