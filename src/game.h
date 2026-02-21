@@ -75,7 +75,7 @@ enum Screen {
     SCR_CHARACTER, SCR_SKILLS, SCR_CONFIRM_QUIT,
     SCR_ENCYCLOPEDIA, SCR_ENCY_CLASSES, SCR_ENCY_STATS,
     SCR_ENCY_ITEMS, SCR_ENCY_ENEMIES, SCR_ENCY_BOSSES,
-    SCR_ENCY_SKILLS, SCR_ENCY_DUNGEONS
+    SCR_ENCY_SKILLS, SCR_ENCY_DUNGEONS, SCR_ENCY_COMBAT
 };
 
 /* ── color pairs (CP_*) ───────────────────────────────────────────── */
@@ -341,6 +341,8 @@ int     save_game(const GameState *gs);
 int     load_game(GameState *gs);
 /* Scan all save files and populate gs->slotInfo[] for the save-select screen. */
 void    save_refresh_slots(GameState *gs);
+/* Delete a save file by slot index. */
+void    save_delete_slot(int slot);
 
 /* ── data.c ───────────────────────────────────────────────────────── */
 

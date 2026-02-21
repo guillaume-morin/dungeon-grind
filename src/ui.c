@@ -165,10 +165,10 @@ static void render_save_select(GameState *gs) {
     row += 1;
     int newSel = (gs->menuIdx == NUM_SAVE_SLOTS);
     if (newSel) wattron(w, COLOR_PAIR(CP_SELECTED));
-    else wattron(w, COLOR_PAIR(CP_GREEN));
-    mvwprintw(w, row, 1, "%sNEW GAME", newSel ? " > " : "   ");
+    else wattron(w, COLOR_PAIR(CP_RED));
+    mvwprintw(w, row, 1, "%sERASE SLOT", newSel ? " > " : "   ");
     if (newSel) wattroff(w, COLOR_PAIR(CP_SELECTED));
-    else wattroff(w, COLOR_PAIR(CP_GREEN));
+    else wattroff(w, COLOR_PAIR(CP_RED));
 
     wattron(w, COLOR_PAIR(CP_CYAN));
     mvwprintw(w, PANEL_H - 2, 2, "[Enter] Select");
@@ -184,7 +184,7 @@ static void render_new_slot(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_BORDER));
 
     wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-    mvwprintw(w, 1, 2, "Pick Save Slot");
+    mvwprintw(w, 1, 2, "Erase Save Slot");
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
     int row = 4;
@@ -194,7 +194,7 @@ static void render_new_slot(GameState *gs) {
 
         if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
         else if (info->exists) wattron(w, COLOR_PAIR(CP_ORANGE));
-        else wattron(w, COLOR_PAIR(CP_GREEN));
+        else wattron(w, COLOR_PAIR(CP_DEFAULT));
 
         if (info->exists) {
             const ClassDef *cd = data_class(info->classId);
@@ -207,11 +207,11 @@ static void render_new_slot(GameState *gs) {
         }
         wattroff(w, COLOR_PAIR(CP_SELECTED));
         wattroff(w, COLOR_PAIR(CP_ORANGE));
-        wattroff(w, COLOR_PAIR(CP_GREEN));
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
         if (info->exists && !sel) {
             wattron(w, COLOR_PAIR(CP_RED));
-            mvwprintw(w, row + 1, 5, "OVERWRITE");
+            mvwprintw(w, row + 1, 5, "DELETE");
             wattroff(w, COLOR_PAIR(CP_RED));
         }
         row += 3;
@@ -369,7 +369,7 @@ static void render_dungeon_select(GameState *gs) {
             mvwprintw(w, row, 1, "   %-23.23s", dg->name);
             wattroff(w, COLOR_PAIR(cur ? CP_GREEN : CP_DEFAULT));
         }
-        row += 2;
+        row++;
     }
 
     if (gs->inDungeon) {
@@ -666,15 +666,15 @@ static void render_encyclopedia(GameState *gs) {
     mvwprintw(w, 1, 2, "Encyclopedia");
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
-    const char *categories[] = { "Classes", "Skills", "Stats", "Items", "Dungeons", "Enemies", "Bosses" };
-    for (int i = 0; i < 7; i++) {
+    const char *categories[] = { "Classes", "Skills", "Stats", "Items", "Dungeons", "Enemies", "Bosses", "Combat" };
+    for (int i = 0; i < 8; i++) {
         if (i == gs->menuIdx) {
             wattron(w, COLOR_PAIR(CP_SELECTED));
-            mvwprintw(w, 3 + i * 2, 1, " > %-23s", categories[i]);
+            mvwprintw(w, 3 + i, 1, " > %-23s", categories[i]);
             wattroff(w, COLOR_PAIR(CP_SELECTED));
         } else {
             wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, 3 + i * 2, 1, "   %-23s", categories[i]);
+            mvwprintw(w, 3 + i, 1, "   %-23s", categories[i]);
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
     }
@@ -699,10 +699,11 @@ static void render_encyclopedia_detail(GameState *gs) {
         "View equipment organized by slot.",
         "Explore dungeons and their inhabitants.",
         "Study the creatures in each dungeon.",
-        "Face the guardians that rule each dungeon."
+        "Face the guardians that rule each dungeon.",
+        "How damage, ticks, and combat mechanics work."
     };
 
-    if (gs->menuIdx >= 0 && gs->menuIdx < 7) {
+    if (gs->menuIdx >= 0 && gs->menuIdx < 8) {
         wattron(w, COLOR_PAIR(CP_WHITE));
         mvwprintw(w, 2, 2, "%s", descriptions[gs->menuIdx]);
         wattroff(w, COLOR_PAIR(CP_WHITE));
@@ -1210,6 +1211,161 @@ static void render_ency_dungeons_detail(GameState *gs) {
     wnoutrefresh(w);
 }
 
+static void render_ency_combat(GameState *gs) {
+    WINDOW *w = gs->wLeft;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+    mvwprintw(w, 1, 2, "Combat Mechanics");
+    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+    const char *topics[] = {
+        "Tick System", "Hero Damage", "Enemy Armor", "Critical Hits",
+        "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
+        "Buffs & Effects", "Shields & Ward", "Stun & Slow",
+        "Death & Revive", "Boss Encounters", "Loot System",
+        "Resource & Regen"
+    };
+    int nTopics = 14;
+
+    for (int i = 0; i < nTopics; i++) {
+        if (i == gs->menuIdx) {
+            wattron(w, COLOR_PAIR(CP_SELECTED));
+            mvwprintw(w, 3 + i, 1, " > %-23s", topics[i]);
+            wattroff(w, COLOR_PAIR(CP_SELECTED));
+        } else {
+            wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, 3 + i, 1, "   %-23s", topics[i]);
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        }
+    }
+
+    wattron(w, COLOR_PAIR(CP_CYAN));
+    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
+    wattroff(w, COLOR_PAIR(CP_CYAN));
+    wnoutrefresh(w);
+}
+
+static void render_ency_combat_detail(GameState *gs) {
+    WINDOW *w = gs->wEnemy;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    const char *topics[] = {
+        "Tick System", "Hero Damage", "Enemy Armor", "Critical Hits",
+        "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
+        "Buffs & Effects", "Shields & Ward", "Stun & Slow",
+        "Death & Revive", "Boss Encounters", "Loot System",
+        "Resource & Regen"
+    };
+
+    if (gs->menuIdx < 0 || gs->menuIdx >= 14) {
+        wnoutrefresh(w);
+        return;
+    }
+
+    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+    mvwprintw(w, 1, 2, "%s", topics[gs->menuIdx]);
+    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+    wattron(w, COLOR_PAIR(CP_WHITE));
+    int row = 3;
+    switch (gs->menuIdx) {
+    case 0: /* Tick System */
+        mvwprintw(w, row++, 2, "Combat runs in ticks (timer-based).");
+        mvwprintw(w, row++, 2, "Each tick: cooldowns, buffs, skills, attack.");
+        mvwprintw(w, row++, 2, "Tick rate: 300 + 500/(1 + SPD*0.02) ms");
+        mvwprintw(w, row++, 2, "Higher SPD = faster ticks = more DPS.");
+        break;
+    case 1: /* Hero Damage — condense to 4 lines (wEnemy has 4 content rows) */
+        mvwprintw(w, row++, 2, "War STR*1.5  Rog AGI*1.4+STR*0.4");
+        mvwprintw(w, row++, 2, "Mage INT*1.5+WIS*0.5  Pri WIS*1.2");
+        mvwprintw(w, row++, 2, "Rogue gets 1.8x crit multiplier.");
+        mvwprintw(w, row++, 2, "+/-10%% random variance on every hit.");
+        break;
+    case 2: /* Enemy Armor */
+        mvwprintw(w, row++, 2, "Enemy damage reduction:");
+        mvwprintw(w, row++, 2, "  armor = DEF^2 / (DEF + 100)");
+        mvwprintw(w, row++, 2, "Your hit = baseDmg - armor (min 1)");
+        mvwprintw(w, row++, 2, "Some skills ignore armor entirely.");
+        break;
+    case 3: /* Critical Hits */
+        mvwprintw(w, row++, 2, "Crit chance: AGI / 200 (max 50%%)");
+        mvwprintw(w, row++, 2, "Crit multiplier: 1.5x (Rogue: 1.8x)");
+        mvwprintw(w, row++, 2, "Buff critDmgBonus stacks additively.");
+        mvwprintw(w, row++, 2, "Crit check happens after dmg variance.");
+        break;
+    case 4: /* Dodge & Evasion */
+        mvwprintw(w, row++, 2, "Dodge chance: AGI / 300 (max 35%%)");
+        mvwprintw(w, row++, 2, "Buff dodgeBonus stacks additively.");
+        mvwprintw(w, row++, 2, "dodgeNext buff: guaranteed next dodge.");
+        mvwprintw(w, row++, 2, "Dodged attacks deal zero damage.");
+        break;
+    case 5: /* Block (Warrior) */
+        mvwprintw(w, row++, 2, "Warrior only. DEF / 250 (max 30%%)");
+        mvwprintw(w, row++, 2, "Blocks reduce damage by 30%%.");
+        mvwprintw(w, row++, 2, "Block check is after dodge check.");
+        mvwprintw(w, row++, 2, "Other classes cannot block.");
+        break;
+    case 6: /* Damage Reduction */
+        mvwprintw(w, row++, 2, "%% DR: DEF / (DEF + 100) (max 50%%)");
+        mvwprintw(w, row++, 2, "Flat DR: WIS * 0.15 * (1+Lv/30)");
+        mvwprintw(w, row++, 2, "Applied before block, after variance.");
+        mvwprintw(w, row++, 2, "Both stack (%% first, flat second).");
+        break;
+    case 7: /* Buffs & Effects */
+        mvwprintw(w, row++, 2, "Skills create timed buffs (ticksLeft).");
+        mvwprintw(w, row++, 2, "damageMul, HoT, DoT, dodge, crit...");
+        mvwprintw(w, row++, 2, "Buffs tick each combat step.");
+        mvwprintw(w, row++, 2, "Max 10 active buffs at once.");
+        break;
+    case 8: /* Shields & Ward */
+        mvwprintw(w, row++, 2, "buffShieldPct: absorb shield (HP%%).");
+        mvwprintw(w, row++, 2, "Shields drain before HP damage.");
+        mvwprintw(w, row++, 2, "Multiple shields stack, drain in order.");
+        mvwprintw(w, row++, 2, "Mana Shield: damage costs mana instead.");
+        break;
+    case 9: /* Stun & Slow */
+        mvwprintw(w, row++, 2, "Stunned enemies skip their attack.");
+        mvwprintw(w, row++, 2, "Slowed enemies also skip their turn.");
+        mvwprintw(w, row++, 2, "Duration in ticks, decrements each tick.");
+        mvwprintw(w, row++, 2, "Hero still attacks stunned enemies.");
+        break;
+    case 10: /* Death & Revive */
+        mvwprintw(w, row++, 2, "On death: lose 10%% gold, clear buffs.");
+        mvwprintw(w, row++, 2, "Revive after 4 ticks at full HP/mana.");
+        mvwprintw(w, row++, 2, "Dungeon kill count resets to 0.");
+        mvwprintw(w, row++, 2, "Boss progress is lost on death.");
+        break;
+    case 11: /* Boss Encounters */
+        mvwprintw(w, row++, 2, "Boss spawns after 50 normal kills.");
+        mvwprintw(w, row++, 2, "6 tick delay after boss kill.");
+        mvwprintw(w, row++, 2, "Kill count resets after boss phase.");
+        mvwprintw(w, row++, 2, "Bosses are always the dungeon guardian.");
+        break;
+    case 12: /* Loot System */
+        mvwprintw(w, row++, 2, "Normal: roll vs enemy dropChance.");
+        mvwprintw(w, row++, 2, "Boss: guaranteed weighted rarity drop.");
+        mvwprintw(w, row++, 2, "Weights 50/30/12/6/2 (Com > Legendary)");
+        mvwprintw(w, row++, 2, "Dungeon caps max normal drop rarity.");
+        break;
+    case 13: /* Resource & Regen */
+        mvwprintw(w, row++, 2, "Each class has a resource (Rage, etc).");
+        mvwprintw(w, row++, 2, "Regen per tick: class resourceRegen.");
+        mvwprintw(w, row++, 2, "VIT heals VIT*2 HP on each kill.");
+        mvwprintw(w, row++, 2, "Level-up fully restores HP and resource.");
+        break;
+    }
+    wattroff(w, COLOR_PAIR(CP_WHITE));
+
+    wnoutrefresh(w);
+}
+
 static int shop_item_count(GameState *gs);
 static const ItemDef *shop_item_at(GameState *gs, int idx);
 
@@ -1663,6 +1819,10 @@ static void render_enemy_panel(GameState *gs) {
         render_ency_dungeons_detail(gs);
         return;
     }
+    if (gs->screen == SCR_ENCY_COMBAT) {
+        render_ency_combat_detail(gs);
+        return;
+    }
 
     WINDOW *w = gs->wEnemy;
     werase(w);
@@ -1762,6 +1922,7 @@ void ui_render(GameState *gs) {
     case SCR_ENCY_BOSSES:   render_ency_bosses(gs);   break;
     case SCR_ENCY_SKILLS:   render_ency_skills(gs);   break;
     case SCR_ENCY_DUNGEONS: render_ency_dungeons(gs); break;
+    case SCR_ENCY_COMBAT:   render_ency_combat(gs);   break;
     }
 
     render_enemy_panel(gs);
@@ -1828,12 +1989,13 @@ void ui_handle_key(GameState *gs, int ch) {
                 gs->saveSlot = gs->menuIdx;
                 load_game(gs);
                 ui_log(gs, "Save loaded.", CP_GREEN);
+            } else if (gs->menuIdx < NUM_SAVE_SLOTS && !gs->slotInfo[gs->menuIdx].exists) {
+                gs->saveSlot = gs->menuIdx;
+                gs->screen = SCR_CLASS_SELECT;
+                gs->menuIdx = 0;
             } else if (gs->menuIdx == NUM_SAVE_SLOTS) {
                 gs->screen = SCR_NEW_SLOT;
                 gs->menuIdx = 0;
-                for (int i = 0; i < NUM_SAVE_SLOTS; i++) {
-                    if (!gs->slotInfo[i].exists) { gs->menuIdx = i; break; }
-                }
             }
         }
         break;
@@ -1843,9 +2005,12 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_SAVE_SLOTS - 1; }
         if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_SAVE_SLOTS) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
-            gs->saveSlot = gs->menuIdx;
-            gs->screen = SCR_CLASS_SELECT;
-            gs->menuIdx = 0;
+            if (gs->slotInfo[gs->menuIdx].exists) {
+                save_delete_slot(gs->menuIdx);
+                save_refresh_slots(gs);
+            }
+            gs->screen = SCR_SAVE_SELECT;
+            gs->menuIdx = NUM_SAVE_SLOTS;
         }
         if (ch == 27) { gs->screen = SCR_SAVE_SELECT; gs->menuIdx = NUM_SAVE_SLOTS; }
         break;
@@ -2139,8 +2304,8 @@ void ui_handle_key(GameState *gs, int ch) {
         break;
 
     case SCR_ENCYCLOPEDIA:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 6; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 6) gs->menuIdx = 0; }
+        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 7; }
+        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 7) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             switch (gs->menuIdx) {
             case 0: gs->screen = SCR_ENCY_CLASSES;  gs->menuIdx = 0; break;
@@ -2150,6 +2315,7 @@ void ui_handle_key(GameState *gs, int ch) {
             case 4: gs->screen = SCR_ENCY_DUNGEONS; gs->menuIdx = 0; break;
             case 5: gs->screen = SCR_ENCY_ENEMIES;  gs->menuIdx = 0; break;
             case 6: gs->screen = SCR_ENCY_BOSSES;   gs->menuIdx = 0; break;
+            case 7: gs->screen = SCR_ENCY_COMBAT;   gs->menuIdx = 0; break;
             }
         }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 5; }
@@ -2208,6 +2374,14 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = total - 1; }
         if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= total) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 1; }
+        break;
+    }
+
+    case SCR_ENCY_COMBAT: {
+        int nTopics = 14;
+        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
+        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 7; }
         break;
     }
     }

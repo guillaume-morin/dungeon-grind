@@ -110,6 +110,12 @@ int load_game(GameState *gs) {
     return 1;
 }
 
+/* Delete a save file by slot index. */
+void save_delete_slot(int slot) {
+    if (slot < 0 || slot >= NUM_SAVE_SLOTS) return;
+    remove(save_slot_path(slot));
+}
+
 /* Scan all 3 save files and populate slotInfo[] (name, level, class) for the save-select screen. */
 void save_refresh_slots(GameState *gs) {
     for (int i = 0; i < NUM_SAVE_SLOTS; i++) {
