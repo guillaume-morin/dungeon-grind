@@ -618,6 +618,7 @@ const char *data_rarity_name(int r)  { return (r>=0 && r<NUM_RARITIES) ? RARITY_
 int         data_rarity_color(int r) { return (r>=0 && r<NUM_RARITIES) ? RARITY_COLS[r]  : CP_WHITE; }
 const char *data_slot_name(int s)    { return (s>=0 && s<NUM_SLOTS)    ? SLOT_NAMES[s]   : "?"; }
 
+/* Pick a random item matching level range, class, and rarity cap. Uniform random among candidates. */
 const ItemDef *data_random_drop(int minLvl, int maxLvl, int classMask, int maxRarity) {
     int candidates[NUM_ITEMS_TOTAL];
     int n = 0;

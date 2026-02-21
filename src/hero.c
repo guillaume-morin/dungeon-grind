@@ -21,6 +21,7 @@
 #include <string.h>
 #include <math.h>
 
+/* Zero-initialize hero and set class defaults. skillChoices[] start at -1 (unchosen). */
 Hero hero_create(int classId, const char *name) {
     Hero h;
     memset(&h, 0, sizeof(h));
@@ -41,6 +42,18 @@ Hero hero_create(int classId, const char *name) {
     return h;
 }
 
+/*
+ * Single source of truth for all derived combat stats. Recomputed from scratch
+ * each call (no caching) to avoid stale values after talent/equip changes.
+ *
+ * Stat pipeline:
+ *   1. For each stat: base + soft-capped talents + equipment sum
+ *      Soft cap: past 30 pts, overflow is halved via integer division.
+ *   2. Primary-stat-based damage (class-specific override for mage/priest/rogue)
+ *   3. Derived rates: crit (AGI/200), dodge (AGI/300), block (DEF/250, warrior only),
+ *      DR (DEF/(DEF+100)), tick rate (800 - SPD*8, min 300ms),
+ *      XP multiplier (1 + INT*0.002), flat damage reduce (WIS*0.15)
+ */
 EStats hero_effective_stats(const Hero *h) {
     EStats es;
     memset(&es, 0, sizeof(es));
@@ -91,6 +104,7 @@ EStats hero_effective_stats(const Hero *h) {
     return es;
 }
 
+/* Linear XP curve: 50*level + 50. Level 1 needs 100 XP, level 50 needs 2550. */
 int hero_xp_needed(int level) {
     return 50 * level + 50;
 }
@@ -101,6 +115,11 @@ float hero_xp_pct(const Hero *h) {
     return (float)h->xp / needed;
 }
 
+/*
+ * Grant XP with auto-level-up loop: drains XP threshold, increments level,
+ * awards 1 talent point, and fully restores HP + resource each level.
+ * Returns 1 if at least one level was gained.
+ */
 int hero_add_xp(GameState *gs, int amount) {
     Hero *h = &gs->hero;
     h->xp += amount;
@@ -137,6 +156,12 @@ int hero_alloc_talent(Hero *h, int stat) {
     return 1;
 }
 
+/*
+ * Equip an item. If the slot is occupied, the old item is auto-moved to inventory.
+ * IMPORTANT: The caller must remove the source item from inventory afterward,
+ * because this function copies *item into the slot (it doesn't move it).
+ * Returns 0 if level requirement not met or inventory full (can't stash old item).
+ */
 int hero_equip(Hero *h, const ItemDef *item) {
     if (!item || item->levelReq > h->level) return 0;
     int slot = item->slot;

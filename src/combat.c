@@ -29,14 +29,16 @@
 #include <string.h>
 #include <math.h>
 
-static float randf(void) { return (float)rand() / RAND_MAX; }
+static float randf(void) { return (float)rand() / RAND_MAX; } /* [0.0, 1.0] */
 
+/* Apply ±10% random variance to a damage value (minimum variance of 1). */
 static int dmg_variance(int base) {
     int var = (int)(base * 0.1f);
     if (var < 1) var = 1;
     return base + (rand() % (var * 2 + 1)) - var;
 }
 
+/* Spawn next enemy from the current dungeon's enemy pool, or the boss if kill count >= BOSS_THRESHOLD. */
 void combat_spawn(GameState *gs) {
     const DungeonDef *dg = data_dungeon(gs->currentDungeon);
     if (!dg) return;
@@ -80,6 +82,7 @@ void combat_spawn(GameState *gs) {
     }
 }
 
+/* Tick all active buffs: apply HoT/DoT, decrement timers, remove expired (reverse iteration). */
 void combat_tick_buffs(GameState *gs) {
     Hero *h = &gs->hero;
     for (int i = h->numBuffs - 1; i >= 0; i--) {
@@ -99,6 +102,7 @@ void combat_tick_buffs(GameState *gs) {
     }
 }
 
+/* Check if any active buff has a specific boolean flag set. Exactly one check param should be 1. */
 static int has_buff_flag(const Hero *h, int checkImmune, int checkManaShield, int checkDodge, int checkDoubleDmg) {
     for (int i = 0; i < h->numBuffs; i++) {
         if (checkImmune    && h->buffs[i].immune)      return 1;
@@ -109,6 +113,7 @@ static int has_buff_flag(const Hero *h, int checkImmune, int checkManaShield, in
     return 0;
 }
 
+/* Sum a float field across all active buffs. field: 0=damageMul, 1=dodgeBonus, 2=critDmgBonus. */
 static float total_buff_val(const Hero *h, int field) {
     float total = 0;
     for (int i = 0; i < h->numBuffs; i++) {
@@ -121,6 +126,7 @@ static float total_buff_val(const Hero *h, int field) {
     return total;
 }
 
+/* Consume (clear) a one-shot buff flag from the first buff that has it. */
 static void consume_buff_flag(Hero *h, int consumeDodge, int consumeDouble) {
     for (int i = 0; i < h->numBuffs; i++) {
         if (consumeDodge  && h->buffs[i].dodgeNext)    { h->buffs[i].dodgeNext = 0; return; }
@@ -128,11 +134,19 @@ static void consume_buff_flag(Hero *h, int consumeDodge, int consumeDouble) {
     }
 }
 
+/* Per-dungeon rarity cap for normal mob drops. Bosses get +1 tier (see try_boss_loot). */
 static const int MOB_MAX_RARITY[NUM_DUNGEONS] = {
     RARITY_UNCOMMON, RARITY_UNCOMMON, RARITY_RARE, RARITY_RARE,
     RARITY_EPIC, RARITY_EPIC, RARITY_EPIC, RARITY_EPIC, RARITY_EPIC
 };
 
+/*
+ * Boss guaranteed drop with weighted rarity selection.
+ * Algorithm: bucket all eligible items (level range + class + rarity cap) by rarity,
+ * then pick a rarity tier using RARITY_WEIGHTS {50,30,12,6,2} — Common is 25× more
+ * likely than Legendary. Finally pick a random item from the chosen rarity bucket.
+ * Boss rarity cap = dungeon's mob cap + 1 (bosses can drop one tier higher).
+ */
 static void try_boss_loot(GameState *gs) {
     Hero *h = &gs->hero;
     if (h->invCount >= MAX_INVENTORY) return;
@@ -185,6 +199,7 @@ static void try_boss_loot(GameState *gs) {
     ui_log(gs, buf, data_rarity_color(drop->rarity));
 }
 
+/* Normal mob loot: roll against enemy's dropChance, then pick random item within dungeon rarity cap. */
 static void try_loot_drop(GameState *gs) {
     Hero *h = &gs->hero;
     Enemy *e = &gs->enemy;
@@ -205,6 +220,15 @@ static void try_loot_drop(GameState *gs) {
     ui_log(gs, buf, data_rarity_color(drop->rarity));
 }
 
+/*
+ * Generic SkillDef interpreter — executes any skill by reading its data fields:
+ *   dmgMul > 0  → deal damage (with numHits, ignoreArmor)
+ *   stunTicks   → stun enemy
+ *   buffTicks   → create Buff with shield/DoT/HoT/dmgMul/dodge/crit/immune
+ *   healPct     → instant HP heal (% of maxHp)
+ *   manaPct     → instant resource restore (% of maxResource)
+ * This avoids per-skill code paths — all 48 skills run through the same logic.
+ */
 static void apply_skill(GameState *gs, const SkillDef *sk) {
     Hero *h = &gs->hero;
     Enemy *e = &gs->enemy;
@@ -272,6 +296,12 @@ static void apply_skill(GameState *gs, const SkillDef *sk) {
     ui_log(gs, buf, CP_CYAN);
 }
 
+/*
+ * Fire one skill per tick, highest tier first. For each tier, checks:
+ * skill chosen, level requirement, cooldown ready, resource available,
+ * hpBelow threshold (hero HP %), enemyHpBelow threshold (enemy HP %).
+ * Returns after the first skill fires (one skill per tick).
+ */
 void combat_try_skills(GameState *gs) {
     Hero *h = &gs->hero;
     Enemy *e = &gs->enemy;
@@ -303,6 +333,18 @@ void combat_try_skills(GameState *gs) {
     }
 }
 
+/*
+ * One combat tick — the core game loop step. Sequence:
+ *   1. Boss/death timer gates (return early if counting down)
+ *   2. Decrement skill cooldowns, regen resource
+ *   3. Tick buffs (HoT/DoT), try skills (may kill enemy → goto enemy_killed)
+ *   4. Normal attack: buff multipliers → crit check → armor reduction → deal damage
+ *   5. If enemy dies: award gold (/4, min 1) + XP, loot, heal VIT*2, respawn/boss delay
+ *   6. Enemy retaliation: dodge → immune → calculate damage → block → shield absorb → HP loss
+ *   7. Hero death: lose 10% gold, reset dungeon kills, start revive timer
+ *
+ * The "goto enemy_killed" label bridges skill-kills into the same reward path as normal kills.
+ */
 void combat_tick(GameState *gs) {
     if (!gs->inDungeon || gs->paused) return;
     if (gs->bossTimer > 0) {

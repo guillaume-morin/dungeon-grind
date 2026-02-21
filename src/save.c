@@ -28,6 +28,7 @@
 #define SAVE_MAGIC  0x44475256  /* "DGRV" */
 #define SAVE_VER    4
 
+/* Return platform-specific save directory: ~/.dungeon-grind or %APPDATA%\.dungeon-grind. */
 static const char *save_dir(void) {
     static char path[256];
 #if defined(_WIN32)
@@ -47,6 +48,7 @@ static const char *save_slot_path(int slot) {
     return path;
 }
 
+/* Write [magic][version][Hero][dungeon state] to save file. Creates save dir if needed. */
 int save_game(const GameState *gs) {
     if (!gs->heroCreated) return 0;
     PLATFORM_MKDIR(save_dir());
@@ -67,6 +69,11 @@ int save_game(const GameState *gs) {
     return 1;
 }
 
+/*
+ * Load save file: validate magic + version, read Hero + dungeon state.
+ * Rejects incompatible saves (version mismatch) rather than loading corrupted data.
+ * Resets runtime combat state (buffs, boss/death timers) and respawns if in dungeon.
+ */
 int load_game(GameState *gs) {
     FILE *f = fopen(save_slot_path(gs->saveSlot), "rb");
     if (!f) return 0;
@@ -103,6 +110,7 @@ int load_game(GameState *gs) {
     return 1;
 }
 
+/* Scan all 3 save files and populate slotInfo[] (name, level, class) for the save-select screen. */
 void save_refresh_slots(GameState *gs) {
     for (int i = 0; i < NUM_SAVE_SLOTS; i++) {
         SaveSlotInfo *info = &gs->slotInfo[i];

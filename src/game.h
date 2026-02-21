@@ -287,53 +287,80 @@ typedef struct {
 
 /* ── hero.c ───────────────────────────────────────────────────────── */
 
+/* Initialize a hero with class defaults and zeroed gear/talents. */
 Hero    hero_create(int classId, const char *name);
+/* Compute all derived stats from base + talents (soft-capped) + equipment. */
 EStats  hero_effective_stats(const Hero *h);
+/* XP threshold to reach the next level: 50*level + 50. */
 int     hero_xp_needed(int level);
+/* Current XP as a 0.0–1.0 fraction of the level-up threshold. */
 float   hero_xp_pct(const Hero *h);
+/* Grant XP; auto-levels (with talent point + full heal). Returns 1 if leveled. */
 int     hero_add_xp(GameState *gs, int amount);
+/* Spend one talent point on a stat. Returns 0 if out of points. */
 int     hero_alloc_talent(Hero *h, int stat);
+/* Equip item (auto-moves old item to inventory). Caller removes source copy. */
 int     hero_equip(Hero *h, const ItemDef *item);
+/* Move equipped item to inventory, clear slot, recompute HP. */
 void    hero_unequip(Hero *h, int slot);
+/* Add HP, clamped to maxHp. */
 void    hero_heal(Hero *h, int amount);
+/* Add resource, clamped to maxResource. */
 void    hero_restore_resource(Hero *h, int amount);
 
 /* ── combat.c ─────────────────────────────────────────────────────── */
 
+/* Run one combat tick: cooldowns, buffs, skills, attack, enemy retaliation, death. */
 void    combat_tick(GameState *gs);
+/* Spawn the next enemy (or boss if kill count reached BOSS_THRESHOLD). */
 void    combat_spawn(GameState *gs);
+/* Tick all active buffs: apply HoT/DoT, decrement timers, remove expired. */
 void    combat_tick_buffs(GameState *gs);
+/* Fire the highest-tier ready skill that passes all resource/threshold checks. */
 void    combat_try_skills(GameState *gs);
 
 /* ── ui.c ─────────────────────────────────────────────────────────── */
 
+/* Create ncurses windows and initialize color pairs. */
 void    ui_init(GameState *gs);
+/* Destroy ncurses windows and call endwin(). */
 void    ui_destroy(GameState *gs);
+/* Redraw all panels (left menu, enemy/detail, combat log) via wnoutrefresh + doupdate. */
 void    ui_render(GameState *gs);
+/* Process one keypress; dispatches to current screen's input handler. */
 void    ui_handle_key(GameState *gs, int ch);
+/* Append a colored line to the combat log (ring buffer, MAX_LOG entries). */
 void    ui_log(GameState *gs, const char *text, int color);
 
 /* ── save.c ───────────────────────────────────────────────────────── */
 
+/* Write hero + dungeon state to binary save file. Returns 1 on success. */
 int     save_game(const GameState *gs);
+/* Load save file into gs; resets combat state and respawns if in dungeon. */
 int     load_game(GameState *gs);
+/* Scan all save files and populate gs->slotInfo[] for the save-select screen. */
 void    save_refresh_slots(GameState *gs);
 
 /* ── data.c ───────────────────────────────────────────────────────── */
 
+/* Bounds-checked accessors for static game data arrays. Return NULL on bad id. */
 const ClassDef     *data_class(int id);
 const DungeonDef   *data_dungeon(int id);
 const EnemyTemplate*data_enemy(int id);
 int                 data_num_items(void);
 const ItemDef      *data_item(int id);
+/* Lookup names/labels for display. */
 const char         *data_stat_name(int s);
 const char         *data_stat_short(int s);
 const char         *data_rarity_name(int r);
 int                 data_rarity_color(int r);
 const char         *data_slot_name(int s);
 int                 data_num_enemies(void);
+/* Pick a random item within level range, class, and rarity cap. NULL if none. */
 const ItemDef      *data_random_drop(int minLvl, int maxLvl, int classMask, int maxRarity);
+/* Get a specific skill definition: SKILLS[classId][tier][option]. */
 const SkillDef     *data_skill(int classId, int tier, int option);
+/* Required hero level for the given skill tier (10, 20, 30, 40, 50, 60). */
 int                 data_skill_level(int tier);
 
 #endif /* GAME_H */

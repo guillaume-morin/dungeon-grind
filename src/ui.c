@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+/* Draw a filled/empty bar using ACS_BLOCK and ACS_BULLET characters. */
 static void draw_bar(WINDOW *w, int y, int x, int width, int cur, int max, int cpFull, int cpEmpty) {
     if (max <= 0) max = 1;
     int filled = (cur * width) / max;
@@ -613,6 +614,7 @@ static void render_confirm_quit(GameState *gs) {
     wnoutrefresh(w);
 }
 
+/* Collect all non-boss enemy indices across all dungeons, ordered by dungeon. */
 static int ency_normal_enemies(int *out, int max) {
     int n = 0;
     for (int d = 0; d < NUM_DUNGEONS && n < max; d++) {
@@ -631,6 +633,7 @@ static int ency_bosses(int *out, int max) {
     return n;
 }
 
+/* Collect item indices for a given slot, filtered by classMask. Used by encyclopedia + shop. */
 static int ency_items_for_slot(int slot, int classMask, int *out, int max) {
     int n = 0;
     for (int i = 0; i < data_num_items() && n < max; i++) {
@@ -1208,6 +1211,7 @@ static void render_ency_dungeons_detail(GameState *gs) {
 static int shop_item_count(GameState *gs);
 static const ItemDef *shop_item_at(GameState *gs, int idx);
 
+/* Return the item currently highlighted in the equipment screen (equipped slot or bag item). */
 static const ItemDef *equip_highlighted(const GameState *gs) {
     if (gs->menuIdx < NUM_SLOTS) {
         if (gs->hero.hasEquip[gs->menuIdx])
@@ -1220,6 +1224,7 @@ static const ItemDef *equip_highlighted(const GameState *gs) {
     return NULL;
 }
 
+/* Render item stats in the right panel, with optional comparison deltas against currently equipped (cmp). */
 static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *cmp) {
     WINDOW *w = gs->wEnemy;
     werase(w);
@@ -1290,6 +1295,14 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
     wnoutrefresh(w);
 }
 
+/*
+ * Character screen right panel: shows what adding talent points will do.
+ * Handles the soft-cap dead zone: past 30 talent points, integer division
+ * means some +1 increments produce zero visible stat change. This function
+ * searches for the minimum increment (1–20) that actually changes any of
+ * the 10 derived fields by temporarily adding points, computing stats,
+ * and comparing. Shows "Next bonus: +N pts" when in a dead zone.
+ */
 static void render_stat_detail(GameState *gs) {
     WINDOW *w = gs->wEnemy;
     werase(w);
@@ -1565,6 +1578,12 @@ static void render_skills(GameState *gs) {
     wnoutrefresh(w);
 }
 
+/*
+ * Context-sensitive right panel dispatcher. Routes to different detail renderers
+ * based on the current screen: item stats (equipment/shop/encyclopedia), stat
+ * preview (character), skill detail (skills), encyclopedia entries, or the
+ * default enemy display with ASCII art and HP bar during combat.
+ */
 static void render_enemy_panel(GameState *gs) {
     if (gs->screen == SCR_SKILLS) {
         render_skill_detail(gs);
@@ -1747,6 +1766,7 @@ void ui_render(GameState *gs) {
     doupdate();
 }
 
+/* Count items available in the shop for the current slot filter and hero class. */
 static int shop_item_count(GameState *gs) {
     int slotFilter = gs->shopSlot;
     int classMask = (1 << gs->hero.classId);
@@ -1760,6 +1780,7 @@ static int shop_item_count(GameState *gs) {
     return n;
 }
 
+/* Return the idx-th item matching the current shop slot filter and hero class. */
 static const ItemDef *shop_item_at(GameState *gs, int idx) {
     int slotFilter = gs->shopSlot;
     int classMask = (1 << gs->hero.classId);
@@ -1774,6 +1795,16 @@ static const ItemDef *shop_item_at(GameState *gs, int idx) {
     return NULL;
 }
 
+/*
+ * Main input dispatcher. Each screen has its own case block handling navigation
+ * (up/down/left/right) and actions (enter/esc/hotkeys).
+ *
+ * Notable complex cases:
+ *   SCR_SHOP enter: swap-sell when inventory is full — temporarily clears the equip slot,
+ *     equips the new item, and sells the old one. Restores on failure.
+ *   SCR_EQUIPMENT '1'-'4': bulk sell all items below a rarity threshold.
+ *     Iterates in reverse to avoid index shifting bugs during removal.
+ */
 void ui_handle_key(GameState *gs, int ch) {
     if (ch == ERR) return;
 
