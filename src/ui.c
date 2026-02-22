@@ -1361,9 +1361,9 @@ static void render_ency_combat(GameState *gs) {
         "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
         "Buffs & Effects", "Shields & Ward", "Stun & Slow",
         "Death & Revive", "Boss Encounters", "Loot System",
-        "Resource & Regen"
+        "Resource & Regen", "Hard Mode"
     };
-    int nTopics = 14;
+    int nTopics = 15;
 
     for (int i = 0; i < nTopics; i++) {
         if (i == gs->menuIdx) {
@@ -1395,10 +1395,10 @@ static void render_ency_combat_detail(GameState *gs) {
         "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
         "Buffs & Effects", "Shields & Ward", "Stun & Slow",
         "Death & Revive", "Boss Encounters", "Loot System",
-        "Resource & Regen"
+        "Resource & Regen", "Hard Mode"
     };
 
-    if (gs->menuIdx < 0 || gs->menuIdx >= 14) {
+    if (gs->menuIdx < 0 || gs->menuIdx >= 15) {
         wnoutrefresh(w);
         return;
     }
@@ -1493,6 +1493,12 @@ static void render_ency_combat_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "Regen per tick: class resourceRegen.");
         mvwprintw(w, row++, 2, "VIT heals VIT*2 HP on each kill.");
         mvwprintw(w, row++, 2, "Level-up fully restores HP and resource.");
+        break;
+    case 14: /* Hard Mode */
+        mvwprintw(w, row++, 2, "[H] in dungeon select. Beat boss first.");
+        mvwprintw(w, row++, 2, "2 random affixes: Fort/Rage/Curse/");
+        mvwprintw(w, row++, 2, "Thorn/Frenzy/Drain. +50%% gold & XP.");
+        mvwprintw(w, row++, 2, "'H' on unlocked dungeons = available.");
         break;
     }
     wattroff(w, COLOR_PAIR(CP_WHITE));
@@ -2739,9 +2745,9 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_ENCY_COMBAT: {
-        int nTopics = 14;
-        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
-        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
+    int nTopics = 15;
+    if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
+    if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 7; }
         break;
     }
