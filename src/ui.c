@@ -134,7 +134,9 @@ static void render_header(GameState *gs) {
         } else {
             mvwprintw(w, 0, 1, " %s (%s) Lv.%d ", gs->hero.name, cd->name, gs->hero.level);
         }
-        mvwprintw(w, 0, SCREEN_W - (int)strlen(dname) - 3, " %s ", dname);
+        int dCol = SCREEN_W - (int)strlen(dname) - 3;
+        if (dCol < 35) dCol = 35;
+        mvwprintw(w, 0, dCol, " %s ", dname);
         if (gs->paused) {
             mvwprintw(w, 0, SCREEN_W / 2 - 4, "[PAUSED]");
         } else if (gs->inDungeon) {
@@ -654,7 +656,8 @@ static void render_shop(GameState *gs) {
         mvwprintw(w, row, 1, "%s%-16.16s %4dg",
                   sel ? ">" : " ", it.name, it.price);
 
-        wattroff(w, A_COLOR);
+        if (sel) wattroff(w, COLOR_PAIR(canBuy ? sc : CP_SELECTED));
+        else     wattroff(w, COLOR_PAIR(canBuy ? rc : CP_RED));
         row++;
     }
 
@@ -1357,6 +1360,7 @@ static void render_ency_dungeons_detail(GameState *gs) {
         const char *sep = (e < dg->numEnemies - 1) ? ", " : "";
         int len = (int)strlen(et->name) + (int)strlen(sep);
         if (col + len > RIGHT_W - 2) { row++; col = 4; }
+        if (row >= ENEMY_DISPLAY_H - 2) break;
         mvwprintw(w, row, col, "%s%s", et->name, sep);
         col += len;
     }
@@ -1391,7 +1395,7 @@ static void render_ency_combat(GameState *gs) {
         "Resource & Regen", "Death & Revive", "Boss Encounters",
         "Loot System", "Hard Mode", "Offline Progress"
     };
-    int nTopics = 16;
+    int nTopics = (int)(sizeof(topics) / sizeof(topics[0]));
 
     for (int i = 0; i < nTopics; i++) {
         if (i == gs->menuIdx) {
@@ -1426,8 +1430,9 @@ static void render_ency_combat_detail(GameState *gs) {
         "Resource & Regen", "Death & Revive", "Boss Encounters",
         "Loot System", "Hard Mode", "Offline Progress"
     };
+    int nTopics = (int)(sizeof(topics) / sizeof(topics[0]));
 
-    if (gs->menuIdx < 0 || gs->menuIdx >= 16) {
+    if (gs->menuIdx < 0 || gs->menuIdx >= nTopics) {
         wnoutrefresh(w);
         return;
     }
@@ -1662,8 +1667,10 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
     wattroff(w, COLOR_PAIR(rc) | A_BOLD);
 
     wattron(w, COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, 1, 2 + (int)strlen(it->name) + 1, "(%s %s)",
-              data_rarity_name(it->rarity), data_slot_name(it->slot));
+    int infoCol = 2 + (int)strlen(it->name) + 1;
+    if (infoCol < RIGHT_W - 22)
+        mvwprintw(w, 1, infoCol, "(%s %s)",
+                  data_rarity_name(it->rarity), data_slot_name(it->slot));
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
     if (it->levelReq > 0) {
@@ -1710,6 +1717,7 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
 
         col += 16;
         if (col + 14 > RIGHT_W - 2) { col = 2; row++; }
+        if (row >= ENEMY_DISPLAY_H - 1) break;
     }
 
     wnoutrefresh(w);

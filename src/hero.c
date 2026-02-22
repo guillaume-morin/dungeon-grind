@@ -8,8 +8,8 @@
  * each call. This avoids stale-cache bugs at the cost of recalculation
  * (trivial for 7 stats × 7 slots).
  *
- * Talent soft cap: past SOFT_CAP (30), overflow is halved with float
- * math: SOFT_CAP + (overflow * 0.5). Every point past 30 still counts
+ * Talent soft cap: past SOFT_CAP (30), overflow is halved
+ * (SOFT_CAP + (overflow / 2)). Every point past 30 still counts
  * (no dead zones from integer division). The UI searches for the minimum
  * increment that actually changes a derived stat.
  *
@@ -25,6 +25,7 @@ Hero hero_create(int classId, const char *name) {
     Hero h;
     memset(&h, 0, sizeof(h));
     strncpy(h.name, name, MAX_NAME - 1);
+    h.name[MAX_NAME - 1] = '\0';
     h.classId = classId;
     h.level = 1;
 
@@ -61,7 +62,7 @@ EStats hero_effective_stats(const Hero *h) {
     for (int i = 0; i < NUM_STATS; i++) {
         int base = cd->baseStats[i];
         int tal  = h->talents[i];
-        if (tal > SOFT_CAP) tal = SOFT_CAP + (int)((tal - SOFT_CAP) * 0.5f);
+        if (tal > SOFT_CAP) tal = SOFT_CAP + (tal - SOFT_CAP) / 2;
 
         int eq = 0;
         for (int s = 0; s < NUM_SLOTS; s++)

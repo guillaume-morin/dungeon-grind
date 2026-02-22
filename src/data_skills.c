@@ -11,7 +11,7 @@ static const int SKILL_LEVELS[MAX_SKILL_TIERS] = { 10, 20, 30, 40, 50, 60 };
 static const SkillDef SKILLS[NUM_CLASSES][MAX_SKILL_TIERS][2] = {
     [CLASS_WARRIOR] = {
         {
-            {.name="Rend", .description="Bleed: 50% DoT/tick 4t", .cooldown=10, .resourceCost=23, .buffTicks=4, .buffDmgPct=50},
+            {.name="Rend", .description="Bleed: 65% DoT/tick 4t", .cooldown=10, .resourceCost=23, .buffTicks=4, .buffDmgPct=65},
             {.name="Victory Rush", .description="150% dmg + heal 15%", .cooldown=8, .resourceCost=30, .dmgMul=1.5f, .healPct=15}
         },
         {
@@ -20,14 +20,14 @@ static const SkillDef SKILLS[NUM_CLASSES][MAX_SKILL_TIERS][2] = {
         },
         {
             {.name="Second Wind", .description="Heal 5%/tick 3t if HP<35%", .cooldown=15, .resourceCost=0, .buffTicks=3, .buffHealPct=5, .hpBelow=35},
-            {.name="Ignore Pain", .description="Shield 25% maxHP", .cooldown=12, .resourceCost=30, .buffTicks=6, .buffShieldPct=25}
+            {.name="Ignore Pain", .description="Shield 35% maxHP", .cooldown=12, .resourceCost=30, .buffTicks=6, .buffShieldPct=35}
         },
         {
             {.name="Recklessness", .description="+100% crit dmg 4t", .cooldown=18, .resourceCost=45, .buffTicks=4, .buffCritBonus=1.0f},
             {.name="Rampage", .description="4 hits at 80% dmg", .cooldown=10, .resourceCost=60, .dmgMul=0.8f, .numHits=4}
         },
         {
-            {.name="Shield Wall", .description="Shield 40% HP if HP<40%", .cooldown=25, .resourceCost=0, .buffTicks=5, .buffShieldPct=40, .hpBelow=40},
+            {.name="Shield Wall", .description="Shield 55% HP if HP<40%", .cooldown=25, .resourceCost=0, .buffTicks=5, .buffShieldPct=55, .hpBelow=40},
             {.name="Berserker Rage", .description="+40% dmg 6t", .cooldown=16, .resourceCost=45, .buffTicks=6, .buffDmgMul=0.4f}
         },
         {
@@ -38,26 +38,26 @@ static const SkillDef SKILLS[NUM_CLASSES][MAX_SKILL_TIERS][2] = {
     [CLASS_ROGUE] = {
         {
             {.name="Slice and Dice", .description="+35% dmg 5t", .cooldown=12, .resourceCost=30, .buffTicks=5, .buffDmgMul=0.35f},
-            {.name="Deadly Poison", .description="DoT 60%/tick 4t", .cooldown=8, .resourceCost=23, .buffTicks=4, .buffDmgPct=60}
+            {.name="Deadly Poison", .description="DoT 45%/tick 4t", .cooldown=8, .resourceCost=23, .buffTicks=4, .buffDmgPct=45}
         },
         {
-            {.name="Rupture", .description="DoT 80%/tick 5t", .cooldown=10, .resourceCost=38, .buffTicks=5, .buffDmgPct=80},
-            {.name="Ghostly Strike", .description="180% dmg +20% dodge 3t", .cooldown=8, .resourceCost=38, .dmgMul=1.8f, .buffTicks=3, .buffDodge=0.2f}
+            {.name="Rupture", .description="DoT 55%/tick 5t", .cooldown=10, .resourceCost=38, .buffTicks=5, .buffDmgPct=55},
+            {.name="Ghostly Strike", .description="220% dmg +20% dodge 3t", .cooldown=8, .resourceCost=38, .dmgMul=2.2f, .buffTicks=3, .buffDodge=0.2f}
         },
         {
-            {.name="Adrenaline Rush", .description="+50% dmg 5t", .cooldown=20, .resourceCost=45, .buffTicks=5, .buffDmgMul=0.5f},
+            {.name="Adrenaline Rush", .description="+35% dmg 5t", .cooldown=20, .resourceCost=45, .buffTicks=5, .buffDmgMul=0.35f},
             {.name="Cloak of Shadows", .description="Immune 2t if HP<40%", .cooldown=22, .resourceCost=0, .buffTicks=2, .buffImmune=1, .hpBelow=40}
         },
         {
-            {.name="Cold Blood", .description="+150% crit dmg 2t", .cooldown=14, .resourceCost=45, .buffTicks=2, .buffCritBonus=1.5f},
+            {.name="Cold Blood", .description="+100% crit dmg 2t", .cooldown=14, .resourceCost=45, .buffTicks=2, .buffCritBonus=1.0f},
             {.name="Marked for Death", .description="+60% crit dmg 5t", .cooldown=16, .resourceCost=38, .buffTicks=5, .buffCritBonus=0.6f}
         },
         {
-            {.name="Shadow Blades", .description="200% no-armor +30% dmg 4t", .cooldown=20, .resourceCost=53, .dmgMul=2.0f, .ignoreArmor=1, .buffTicks=4, .buffDmgMul=0.3f},
-            {.name="Crimson Vial", .description="Heal 25%", .cooldown=16, .resourceCost=30, .healPct=25}
+            {.name="Shadow Blades", .description="150% no-armor +20% dmg 4t", .cooldown=20, .resourceCost=53, .dmgMul=1.5f, .ignoreArmor=1, .buffTicks=4, .buffDmgMul=0.2f},
+            {.name="Crimson Vial", .description="Heal 40%", .cooldown=16, .resourceCost=30, .healPct=40}
         },
         {
-            {.name="Shadow Dance", .description="+80% dmg +80% critDmg 4t", .cooldown=22, .resourceCost=60, .buffTicks=4, .buffDmgMul=0.8f, .buffCritBonus=0.8f},
+            {.name="Shadow Dance", .description="+50% dmg +50% critDmg 4t", .cooldown=22, .resourceCost=60, .buffTicks=4, .buffDmgMul=0.5f, .buffCritBonus=0.5f},
             {.name="Death from Above", .description="500% no-armor + stun 2t", .cooldown=20, .resourceCost=75, .dmgMul=5.0f, .ignoreArmor=1, .stunTicks=2}
         }
     },
@@ -90,7 +90,7 @@ static const SkillDef SKILLS[NUM_CLASSES][MAX_SKILL_TIERS][2] = {
     [CLASS_PRIEST] = {
         {
             {.name="Shadow Word: Pain", .description="DoT 80%/tick 5t", .cooldown=10, .resourceCost=23, .buffTicks=5, .buffDmgPct=80},
-            {.name="PW: Shield", .description="Shield 30% maxHP", .cooldown=12, .resourceCost=30, .buffTicks=8, .buffShieldPct=30}
+            {.name="PW: Shield", .description="Shield 40% maxHP", .cooldown=12, .resourceCost=30, .buffTicks=8, .buffShieldPct=40}
         },
         {
             {.name="Desperate Prayer", .description="Heal 30% if HP<35%", .cooldown=18, .resourceCost=0, .healPct=30, .hpBelow=35},

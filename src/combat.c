@@ -60,6 +60,7 @@ void combat_spawn(GameState *gs) {
 
     Enemy *e = &gs->enemy;
     strncpy(e->name, et->name, MAX_NAME - 1);
+    e->name[MAX_NAME - 1] = '\0';
     e->templateIdx = pick;
     e->maxHp     = et->hp;
     e->hp        = e->maxHp;
@@ -78,6 +79,7 @@ void combat_spawn(GameState *gs) {
         char eliteName[MAX_NAME];
         snprintf(eliteName, MAX_NAME, "Elite %s", et->name);
         strncpy(e->name, eliteName, MAX_NAME - 1);
+        e->name[MAX_NAME - 1] = '\0';
         e->maxHp     *= 3;
         e->hp         = e->maxHp;
         e->attack    *= 3;
@@ -245,8 +247,8 @@ static void try_boss_loot(GameState *gs) {
     int bossMaxRar = MOB_MAX_RARITY[gs->currentDungeon] + 1;
     if (bossMaxRar > RARITY_LEGENDARY) bossMaxRar = RARITY_LEGENDARY;
 
-    int hasRarity[NUM_RARITIES] = {0};
-    for (int r = 0; r <= RARITY_RARE && r <= bossMaxRar; r++)
+     int hasRarity[NUM_RARITIES] = {0};
+    for (int r = 0; r <= bossMaxRar; r++)
         hasRarity[r] = 1;
     for (int i = 0; i < data_num_items(); i++) {
         const ItemDef *it = data_item(i);
@@ -338,7 +340,7 @@ static void apply_skill(GameState *gs, const SkillDef *sk) {
         for (int i = 0; i < hits; i++) {
             int d = dmg_variance((int)(es.damage * sk->dmgMul));
             if (!sk->ignoreArmor) {
-                int arm = (int)(e->defense * e->defense / (e->defense + 100.0f));
+                int arm = (int)((float)e->defense * e->defense / (e->defense + 100.0f));
                 d -= arm;
             }
             if (d < 1) d = 1;
@@ -412,7 +414,7 @@ void combat_try_skills(GameState *gs) {
     Enemy *e = &gs->enemy;
 
     for (int t = MAX_SKILL_TIERS - 1; t >= 0; t--) {
-        if (h->skillChoices[t] < 0) continue;
+        if (h->skillChoices[t] < 0 || h->skillChoices[t] > 1) continue;
         if (h->level < data_skill_level(t)) continue;
         if (h->skillCooldowns[t] > 0) continue;
 
@@ -516,7 +518,7 @@ void combat_tick(GameState *gs) {
         baseDmg = (int)(baseDmg * cm);
     }
 
-    int armored = (int)(e->defense * e->defense / (e->defense + 100.0f));
+    int armored = (int)((float)e->defense * e->defense / (e->defense + 100.0f));
     int finalDmg = baseDmg - armored;
     if (finalDmg < 1) finalDmg = 1;
     e->hp -= finalDmg;
@@ -549,7 +551,7 @@ enemy_killed:
                 do { gs->activeAffixes[1] = rand() % NUM_AFFIXES; }
                 while (gs->activeAffixes[1] == gs->activeAffixes[0]);
             }
-            if (!h->hardMode[gs->currentDungeon])
+            if (gs->currentDungeon >= 0 && gs->currentDungeon < NUM_DUNGEONS && !h->hardMode[gs->currentDungeon])
                 h->hardMode[gs->currentDungeon] = 1;
             snprintf(buf, sizeof(buf), "*** %s SLAIN! *** +%dXP +%dG",
                      e->name, xp, gold);
@@ -683,7 +685,10 @@ enemy_killed:
         gs->combatDmgTaken = 0;
         gs->combatHealed = 0;
         gs->combatTicks = 0;
-        snprintf(buf, sizeof(buf), "You died! Lost %d gold. Reviving...", goldLoss);
+        if (goldLoss > 0)
+            snprintf(buf, sizeof(buf), "You died! Lost %d gold. Reviving...", goldLoss);
+        else
+            snprintf(buf, sizeof(buf), "You died! Reviving...");
         ui_log(gs, buf, CP_RED);
         gs->deathTimer = 4;
         check_achievements(gs);

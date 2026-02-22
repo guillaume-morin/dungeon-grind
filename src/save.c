@@ -110,8 +110,8 @@ int load_game(GameState *gs) {
     if (gs->inDungeon && gs->hero.lastSaveTime > 0) {
         int64_t now = (int64_t)time(NULL);
         int64_t elapsed = now - gs->hero.lastSaveTime;
-        int minutes = elapsed > 0 ? (int)(elapsed / 60) : 0;
-        if (minutes > 480) minutes = 480;  /* cap at 8 hours */
+        int64_t raw_min = elapsed > 0 ? elapsed / 60 : 0;
+        int minutes = raw_min > 480 ? 480 : (int)raw_min;  /* cap at 8 hours */
         int totalXp = 0, totalGold = 0;
         if (minutes >= 1) {
             const DungeonDef *dg = data_dungeon(gs->currentDungeon);
@@ -170,8 +170,9 @@ void save_refresh_slots(GameState *gs) {
         Hero h;
         if (fread(&h, sizeof(Hero), 1, f) != 1) { fclose(f); continue; }
 
-        info->exists  = 1;
+         info->exists  = 1;
         strncpy(info->name, h.name, MAX_NAME - 1);
+        info->name[MAX_NAME - 1] = '\0';
         info->level   = h.level;
         info->classId = h.classId;
         fclose(f);
