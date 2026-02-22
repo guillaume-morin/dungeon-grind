@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 /* Draw a filled/empty bar using ACS_BLOCK and ACS_BULLET characters. */
 static void draw_bar(WINDOW *w, int y, int x, int width, int cur, int max, int cpFull, int cpEmpty) {
@@ -2085,6 +2086,30 @@ static void render_bulk_sell(GameState *gs) {
 }
 
 static void render_enemy_panel(GameState *gs) {
+    if (gs->offlineShowUntil > (int64_t)time(NULL) && gs->screen == SCR_MAIN) {
+        WINDOW *w = gs->wEnemy;
+        werase(w);
+        wattron(w, COLOR_PAIR(CP_BORDER));
+        box(w, 0, 0);
+        wattroff(w, COLOR_PAIR(CP_BORDER));
+        wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+        mvwprintw(w, 2, RIGHT_W / 2 - 7, "Welcome back!");
+        wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+        wattron(w, COLOR_PAIR(CP_CYAN) | A_BOLD);
+        if (gs->offlineMin >= 60)
+            mvwprintw(w, 4, 4, "Offline for %dh%dm",
+                      gs->offlineMin / 60, gs->offlineMin % 60);
+        else if (gs->offlineMin >= 1)
+            mvwprintw(w, 4, 4, "Offline for %dm", gs->offlineMin);
+        else
+            mvwprintw(w, 4, 4, "Offline for <1m");
+        wattroff(w, COLOR_PAIR(CP_CYAN) | A_BOLD);
+        wattron(w, COLOR_PAIR(CP_GREEN) | A_BOLD);
+        mvwprintw(w, 5, 4, "+%d XP  +%d Gold", gs->offlineXp, gs->offlineGold);
+        wattroff(w, COLOR_PAIR(CP_GREEN) | A_BOLD);
+        wnoutrefresh(w);
+        return;
+    }
     if (gs->screen == SCR_ACHIEVEMENTS) {
         render_achievement_detail(gs);
         return;
@@ -2199,20 +2224,6 @@ static void render_enemy_panel(GameState *gs) {
             wattron(w, COLOR_PAIR(CP_RED) | A_BOLD);
             mvwprintw(w, 3, RIGHT_W / 2 - 8, "Reviving...");
             wattroff(w, COLOR_PAIR(CP_RED) | A_BOLD);
-        } else if (!gs->inDungeon && gs->heroCreated && gs->offlineMin > 0) {
-            wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-            mvwprintw(w, 2, RIGHT_W / 2 - 7, "Welcome back!");
-            wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-            wattron(w, COLOR_PAIR(CP_CYAN) | A_BOLD);
-            if (gs->offlineMin >= 60)
-                mvwprintw(w, 4, 4, "Offline for %dh%dm",
-                          gs->offlineMin / 60, gs->offlineMin % 60);
-            else
-                mvwprintw(w, 4, 4, "Offline for %dm", gs->offlineMin);
-            wattroff(w, COLOR_PAIR(CP_CYAN) | A_BOLD);
-            wattron(w, COLOR_PAIR(CP_GREEN) | A_BOLD);
-            mvwprintw(w, 5, 4, "+%d XP  +%d Gold", gs->offlineXp, gs->offlineGold);
-            wattroff(w, COLOR_PAIR(CP_GREEN) | A_BOLD);
         } else if (!gs->inDungeon && gs->heroCreated) {
             wattron(w, COLOR_PAIR(CP_DEFAULT));
             mvwprintw(w, 3, RIGHT_W / 2 - 10, "Select a dungeon...");
@@ -2407,7 +2418,7 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = MAIN_MENU_N - 1; }
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= MAIN_MENU_N) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
-            gs->offlineMin = 0;
+            gs->offlineShowUntil = 0;
             switch (gs->menuIdx) {
             case 0: gs->screen = SCR_DUNGEON;      gs->menuIdx = 0; break;
             case 1: gs->screen = SCR_CHARACTER;     gs->menuIdx = 0; break;
@@ -2418,7 +2429,7 @@ void ui_handle_key(GameState *gs, int ch) {
             case 6: gs->screen = SCR_CONFIRM_QUIT;  gs->menuIdx = 0; break;
             }
         }
-        if (ch == 'q' || ch == 'Q') { gs->offlineMin = 0; gs->screen = SCR_CONFIRM_QUIT; gs->menuIdx = 0; }
+        if (ch == 'q' || ch == 'Q') { gs->offlineShowUntil = 0; gs->screen = SCR_CONFIRM_QUIT; gs->menuIdx = 0; }
         break;
 
     case SCR_DUNGEON: {

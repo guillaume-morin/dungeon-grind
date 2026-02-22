@@ -110,33 +110,33 @@ int load_game(GameState *gs) {
     if (gs->inDungeon && gs->hero.lastSaveTime > 0) {
         int64_t now = (int64_t)time(NULL);
         int64_t elapsed = now - gs->hero.lastSaveTime;
-        if (elapsed > 0) {
-            int minutes = (int)(elapsed / 60);
-            if (minutes > 480) minutes = 480;  /* cap at 8 hours */
-            if (minutes >= 1) {
-                const DungeonDef *dg = data_dungeon(gs->currentDungeon);
-                if (dg) {
-                    int avgXp = 0, avgGold = 0;
-                    for (int i = 0; i < dg->numEnemies; i++) {
-                        const EnemyTemplate *et = data_enemy(dg->enemyIdx[i]);
-                        avgXp   += et->xpReward;
-                        avgGold += et->goldReward / 4;
-                    }
-                    avgXp   /= dg->numEnemies;
-                    avgGold /= dg->numEnemies;
-                    int killsPerMin = 5;  /* half of active rate */
-                    int totalXp   = avgXp   * killsPerMin * minutes;
-                    int totalGold = avgGold * killsPerMin * minutes;
-                    if (totalGold < 1) totalGold = 1;
-                    gs->hero.gold += totalGold;
-                    gs->hero.totalGoldEarned += totalGold;
-                    hero_add_xp(gs, totalXp);
-                    gs->offlineXp   = totalXp;
-                    gs->offlineGold = totalGold;
-                    gs->offlineMin  = minutes;
+        int minutes = elapsed > 0 ? (int)(elapsed / 60) : 0;
+        if (minutes > 480) minutes = 480;  /* cap at 8 hours */
+        int totalXp = 0, totalGold = 0;
+        if (minutes >= 1) {
+            const DungeonDef *dg = data_dungeon(gs->currentDungeon);
+            if (dg) {
+                int avgXp = 0, avgGold = 0;
+                for (int i = 0; i < dg->numEnemies; i++) {
+                    const EnemyTemplate *et = data_enemy(dg->enemyIdx[i]);
+                    avgXp   += et->xpReward;
+                    avgGold += et->goldReward / 4;
                 }
+                avgXp   /= dg->numEnemies;
+                avgGold /= dg->numEnemies;
+                int killsPerMin = 5;  /* half of active rate */
+                totalXp   = avgXp   * killsPerMin * minutes;
+                totalGold = avgGold * killsPerMin * minutes;
+                if (totalGold < 1) totalGold = 1;
+                gs->hero.gold += totalGold;
+                gs->hero.totalGoldEarned += totalGold;
+                hero_add_xp(gs, totalXp);
             }
         }
+        gs->offlineShowUntil = (int64_t)time(NULL) + 10;
+        gs->offlineXp   = totalXp;
+        gs->offlineGold = totalGold;
+        gs->offlineMin  = minutes;
     }
 
     if (gs->inDungeon) combat_spawn(gs);

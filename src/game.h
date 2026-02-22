@@ -318,6 +318,7 @@ typedef struct {
     int     hardModeActive;
     int     activeAffixes[2];
 
+    int64_t offlineShowUntil;
     int     offlineXp;
     int     offlineGold;
     int     offlineMin;
