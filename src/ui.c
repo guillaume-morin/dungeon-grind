@@ -553,7 +553,7 @@ static void render_equipment(GameState *gs) {
         mvwprintw(w, PANEL_H - 5, 2, "[Enter] Unequip");
     else if (!inSlots && bagSel >= 0 && bagSel < viewN)
         mvwprintw(w, PANEL_H - 5, 2, "[Enter] Equip");
-    mvwprintw(w, PANEL_H - 4, 2, "[X]Sell  [1-4]Sell<Rar");
+    mvwprintw(w, PANEL_H - 4, 2, "[X]Sell  [Z]Bulk Sell");
     mvwprintw(w, PANEL_H - 3, 2, "[S]ort  [</>]Filter");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
@@ -698,7 +698,7 @@ static void render_character(GameState *gs) {
     mvwprintw(w, row++, 2, "Dodge %.1f%% DR %.1f%%", es.dodgeChance * 100, es.dmgReduction * 100);
     if (es.blockChance > 0)
         mvwprintw(w, row++, 2, "Block %.1f%%", es.blockChance * 100);
-    mvwprintw(w, row++, 2, "Atk %.1f/s", 1000.0f / es.tickRate);
+    mvwprintw(w, row++, 2, "Atk %.2f/s", 1000.0f / es.tickRate);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     row++;
@@ -1693,10 +1693,10 @@ static void render_stat_detail(GameState *gs) {
 
     if (nxt.tickRate != cur.tickRate) {
         wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "Atk %.1f/s", 1000.0f / cur.tickRate);
+        mvwprintw(w, row, 2, "Atk %.2f/s", 1000.0f / cur.tickRate);
         wattroff(w, COLOR_PAIR(CP_WHITE));
         wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %.1f/s", 1000.0f / nxt.tickRate);
+        wprintw(w, " > %.2f/s", 1000.0f / nxt.tickRate);
         wattroff(w, COLOR_PAIR(CP_GREEN));
     }
     if (nxt.healPower != cur.healPower) {
@@ -1987,6 +1987,77 @@ static void render_titles(GameState *gs) {
     wnoutrefresh(w);
 }
 
+static void bulk_sell_preview(const Hero *h, int threshold, int *outCount, int *outGold) {
+    int count = 0, gold = 0;
+    for (int i = 0; i < h->invCount; i++) {
+        if (h->inventory[i].rarity < threshold) {
+            int sp = h->inventory[i].price / 2;
+            if (sp < 1) sp = 1;
+            gold += sp;
+            count++;
+        }
+    }
+    *outCount = count;
+    *outGold = gold;
+}
+
+static void render_bulk_sell(GameState *gs) {
+    WINDOW *w = gs->wLeft;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+    mvwprintw(w, 1, 2, "Bulk Sell");
+    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, 2, 2, "Bag: %d/%d items", gs->hero.invCount, MAX_INVENTORY);
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+    const char *labels[] = {
+        "Sell all Common",
+        "Sell all Common+Uncommon",
+        "Sell all below Epic",
+        "Sell all below Legendary",
+    };
+
+    int row = 4;
+    for (int i = 0; i < 4; i++) {
+        int count, gold;
+        bulk_sell_preview(&gs->hero, i + 1, &count, &gold);
+        int sel = (i == gs->menuIdx);
+
+        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        else if (count > 0) wattron(w, COLOR_PAIR(CP_WHITE));
+        else wattron(w, COLOR_PAIR(CP_DEFAULT));
+
+        mvwprintw(w, row, 1, "%s%-24.24s", sel ? " > " : "   ", labels[i]);
+        wattroff(w, COLOR_PAIR(CP_SELECTED));
+        wattroff(w, COLOR_PAIR(CP_WHITE));
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+        if (count > 0) {
+            wattron(w, COLOR_PAIR(CP_YELLOW));
+            mvwprintw(w, row + 1, 5, "%d item%s for %dg",
+                      count, count > 1 ? "s" : "", gold);
+            wattroff(w, COLOR_PAIR(CP_YELLOW));
+        } else {
+            wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, row + 1, 5, "(nothing to sell)");
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        }
+        row += 3;
+    }
+
+    wattron(w, COLOR_PAIR(CP_CYAN));
+    mvwprintw(w, PANEL_H - 3, 2, "[Enter] Sell");
+    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Cancel");
+    wattroff(w, COLOR_PAIR(CP_CYAN));
+    wnoutrefresh(w);
+}
+
 static void render_enemy_panel(GameState *gs) {
     if (gs->screen == SCR_ACHIEVEMENTS) {
         render_achievement_detail(gs);
@@ -2198,6 +2269,7 @@ void ui_render(GameState *gs) {
     case SCR_ENCY_COMBAT:   render_ency_combat(gs);   break;
     case SCR_ACHIEVEMENTS:  render_achievements(gs);   break;
     case SCR_TITLES:        render_titles(gs);         break;
+    case SCR_BULK_SELL:     render_bulk_sell(gs);      break;
     }
 
     render_enemy_panel(gs);
@@ -2461,40 +2533,9 @@ void ui_handle_key(GameState *gs, int ch) {
                 ui_log(gs, "Unequip first to sell.", CP_RED);
             }
         }
-        if (ch >= '1' && ch <= '4') {
-            int threshold = ch - '0';
-            int totalGold = 0, count = 0;
-            for (int i = gs->hero.invCount - 1; i >= 0; i--) {
-                if (gs->hero.inventory[i].rarity < threshold) {
-                    int sp = gs->hero.inventory[i].price / 2;
-                    if (sp < 1) sp = 1;
-                    totalGold += sp;
-                    count++;
-                    for (int j = i; j < gs->hero.invCount - 1; j++)
-                        gs->hero.inventory[j] = gs->hero.inventory[j + 1];
-                    gs->hero.invCount--;
-                }
-            }
-            if (count > 0) {
-                gs->hero.gold += totalGold;
-                char b[LOG_LINE_W + 1];
-                snprintf(b, sizeof(b), "Sold %d item%s below %s for %dg.",
-                         count, count > 1 ? "s" : "",
-                         data_rarity_name(threshold), totalGold);
-                ui_log(gs, b, CP_YELLOW);
-                filter = gs->equipFilter > 0 ? gs->equipFilter - 1 : -1;
-                viewN = inv_build_view(&gs->hero, filter, gs->equipSort, viewIdx, MAX_INVENTORY);
-                int newTotal = NUM_SLOTS + viewN;
-                if (gs->menuIdx >= newTotal && newTotal > NUM_SLOTS)
-                    gs->menuIdx = newTotal - 1;
-                else if (viewN == 0 && gs->menuIdx >= NUM_SLOTS)
-                    gs->menuIdx = NUM_SLOTS - 1;
-            } else {
-                char b[LOG_LINE_W + 1];
-                snprintf(b, sizeof(b), "No items below %s to sell.",
-                         data_rarity_name(threshold));
-                ui_log(gs, b, CP_DEFAULT);
-            }
+        if (ch == 'z' || ch == 'Z') {
+            gs->screen = SCR_BULK_SELL;
+            gs->menuIdx = 0;
         }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 3; }
         break;
@@ -2720,6 +2761,37 @@ void ui_handle_key(GameState *gs, int ch) {
             }
         }
         if (ch == 27) { gs->screen = SCR_CHARACTER; gs->menuIdx = 0; }
+        break;
+    }
+
+    case SCR_BULK_SELL: {
+        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 3; }
+        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 3) gs->menuIdx = 0; }
+        if (ch == '\n' || ch == KEY_ENTER) {
+            int threshold = gs->menuIdx + 1;
+            int totalGold = 0, count = 0;
+            for (int i = gs->hero.invCount - 1; i >= 0; i--) {
+                if (gs->hero.inventory[i].rarity < threshold) {
+                    int sp = gs->hero.inventory[i].price / 2;
+                    if (sp < 1) sp = 1;
+                    totalGold += sp;
+                    count++;
+                    for (int j = i; j < gs->hero.invCount - 1; j++)
+                        gs->hero.inventory[j] = gs->hero.inventory[j + 1];
+                    gs->hero.invCount--;
+                }
+            }
+            if (count > 0) {
+                gs->hero.gold += totalGold;
+                char b[LOG_LINE_W + 1];
+                snprintf(b, sizeof(b), "Sold %d item%s for %dg.",
+                         count, count > 1 ? "s" : "", totalGold);
+                ui_log(gs, b, CP_YELLOW);
+            }
+            gs->screen = SCR_EQUIPMENT;
+            gs->menuIdx = 0;
+        }
+        if (ch == 27) { gs->screen = SCR_EQUIPMENT; gs->menuIdx = 0; }
         break;
     }
     }
