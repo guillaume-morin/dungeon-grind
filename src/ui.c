@@ -550,12 +550,11 @@ static void render_equipment(GameState *gs) {
     int inSlots = gs->menuIdx < NUM_SLOTS;
     wattron(w, COLOR_PAIR(CP_CYAN));
     if (inSlots && gs->hero.hasEquip[gs->menuIdx])
-        mvwprintw(w, PANEL_H - 5, 2, "[Enter] Unequip");
+        mvwprintw(w, PANEL_H - 4, 2, "[Enter] Unequip");
     else if (!inSlots && bagSel >= 0 && bagSel < viewN)
-        mvwprintw(w, PANEL_H - 5, 2, "[Enter] Equip");
-    mvwprintw(w, PANEL_H - 4, 2, "[X]Sell  [Z]Bulk Sell");
-    mvwprintw(w, PANEL_H - 3, 2, "[S]ort  [</>]Filter");
-    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
+        mvwprintw(w, PANEL_H - 4, 2, "[Enter] Equip");
+    mvwprintw(w, PANEL_H - 3, 2, "[X]Sell [Z]Bulk [S]ort");
+    mvwprintw(w, PANEL_H - 2, 2, "[</>]Filter  [Esc]Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
 }
