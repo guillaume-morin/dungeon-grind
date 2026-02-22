@@ -449,7 +449,8 @@ void data_generate_item(ItemDef *out, int slot, int rarity, int level, int class
 
     static const int RAR_PRICE[3] = { 1, 3, 8 };
     out->price = budget * (3 + level / 2) * RAR_PRICE[rarity] / 10;
-    if (out->price < 1) out->price = 1;
+    out->price = ((out->price + 2) / 5) * 5;
+    if (out->price < 5) out->price = 5;
 }
 
 /*
@@ -486,8 +487,9 @@ void data_shop_item(ItemDef *out, int slot, int level, int classId) {
 
     static const int RAR_PRICE[3] = { 1, 3, 8 };
     out->price = budget * (3 + level / 2) * RAR_PRICE[rarity] / 10;
-    if (out->price < 1) out->price = 1;
     out->price *= 2;  /* shop markup */
+    out->price = ((out->price + 2) / 5) * 5;
+    if (out->price < 5) out->price = 5;
 }
 
 /* Pick a random Epic/Legendary item from ITEMS[] matching level range and class. */
