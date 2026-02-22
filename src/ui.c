@@ -1314,22 +1314,22 @@ static void render_ency_dungeons_detail(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
     wattron(w, COLOR_PAIR(CP_WHITE));
-    mvwprintw(w, 4, 2, "Enemies:");
+    mvwprintw(w, 3, 2, "Enemies:");
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
-    int row = 5;
-    for (int e = 0; e < dg->numEnemies && row < 7; e++) {
+    int row = 4;
+    for (int e = 0; e < dg->numEnemies && row < 9; e++) {
         const EnemyTemplate *et = data_enemy(dg->enemyIdx[e]);
         if (!et) continue;
         wattron(w, COLOR_PAIR(CP_DEFAULT));
-        mvwprintw(w, row++, 3, "%-20.20s HP%d", et->name, et->hp);
+        mvwprintw(w, row++, 3, "%s", et->name);
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
     }
 
     const EnemyTemplate *boss = data_enemy(dg->bossIdx);
     if (boss) {
         wattron(w, COLOR_PAIR(CP_MAGENTA));
-        mvwprintw(w, 7, 2, "Boss: %-16.16s HP%d", boss->name, boss->hp);
+        mvwprintw(w, row, 2, "Boss: %s", boss->name);
         wattroff(w, COLOR_PAIR(CP_MAGENTA));
     }
 
