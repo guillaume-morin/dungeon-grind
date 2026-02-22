@@ -2412,8 +2412,7 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > maxIdx) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 0; }
         if (ch == 'h' || ch == 'H') {
-            if (gs->menuIdx < NUM_DUNGEONS && gs->hero.hardMode[gs->menuIdx])
-                gs->wantHardMode = !gs->wantHardMode;
+            gs->wantHardMode = !gs->wantHardMode;
         }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->inDungeon && gs->menuIdx == NUM_DUNGEONS) {
