@@ -2300,8 +2300,8 @@ void ui_handle_key(GameState *gs, int ch) {
     switch (gs->screen) {
     case SCR_SAVE_SELECT: {
         int maxIdx = NUM_SAVE_SLOTS;
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxIdx; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > maxIdx) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxIdx; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > maxIdx) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->menuIdx < NUM_SAVE_SLOTS && gs->slotInfo[gs->menuIdx].exists) {
                 gs->saveSlot = gs->menuIdx;
@@ -2320,8 +2320,8 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_NEW_SLOT:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_SAVE_SLOTS - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_SAVE_SLOTS) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_SAVE_SLOTS - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_SAVE_SLOTS) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->slotInfo[gs->menuIdx].exists) {
                 save_delete_slot(gs->menuIdx);
@@ -2334,8 +2334,8 @@ void ui_handle_key(GameState *gs, int ch) {
         break;
 
     case SCR_CLASS_SELECT:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_CLASSES - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_CLASSES) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_CLASSES - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_CLASSES) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             gs->hero = hero_create(gs->menuIdx, "");
             gs->screen = SCR_NAME_INPUT;
@@ -2362,8 +2362,8 @@ void ui_handle_key(GameState *gs, int ch) {
         break;
 
     case SCR_MAIN:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = MAIN_MENU_N - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= MAIN_MENU_N) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = MAIN_MENU_N - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= MAIN_MENU_N) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             switch (gs->menuIdx) {
             case 0: gs->screen = SCR_DUNGEON;      gs->menuIdx = 0; break;
@@ -2380,8 +2380,8 @@ void ui_handle_key(GameState *gs, int ch) {
 
     case SCR_DUNGEON: {
         int maxIdx = gs->inDungeon ? NUM_DUNGEONS : NUM_DUNGEONS - 1;
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxIdx; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > maxIdx) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxIdx; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > maxIdx) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 0; }
         if (ch == 'h' || ch == 'H') {
             if (gs->menuIdx < NUM_DUNGEONS && gs->hero.hardMode[gs->menuIdx])
@@ -2449,10 +2449,10 @@ void ui_handle_key(GameState *gs, int ch) {
         int totalItems = NUM_SLOTS + viewN;
         if (totalItems < NUM_SLOTS) totalItems = NUM_SLOTS;
 
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = totalItems - 1; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = totalItems - 1; }
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= totalItems) gs->menuIdx = 0; }
 
-        if (ch == KEY_LEFT || ch == 'a') {
+        if (ch == KEY_LEFT) {
             gs->equipFilter--;
             if (gs->equipFilter < 0) gs->equipFilter = NUM_SLOTS;
             if (gs->menuIdx >= NUM_SLOTS) gs->menuIdx = NUM_SLOTS;
@@ -2461,7 +2461,7 @@ void ui_handle_key(GameState *gs, int ch) {
             if (gs->menuIdx >= NUM_SLOTS && viewN == 0)
                 gs->menuIdx = NUM_SLOTS - 1;
         }
-        if (ch == KEY_RIGHT || ch == 'd') {
+        if (ch == KEY_RIGHT) {
             gs->equipFilter++;
             if (gs->equipFilter > NUM_SLOTS) gs->equipFilter = 0;
             if (gs->menuIdx >= NUM_SLOTS) gs->menuIdx = NUM_SLOTS;
@@ -2543,10 +2543,10 @@ void ui_handle_key(GameState *gs, int ch) {
 
     case SCR_SHOP: {
         int n = shop_item_count(gs);
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = n > 0 ? n - 1 : 0; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= n) gs->menuIdx = 0; }
-        if (ch == KEY_LEFT  || ch == 'a') { gs->shopSlot--; if (gs->shopSlot < 0) gs->shopSlot = NUM_SLOTS - 1; gs->menuIdx = 0; }
-        if (ch == KEY_RIGHT || ch == 'd') { gs->shopSlot++; if (gs->shopSlot >= NUM_SLOTS) gs->shopSlot = 0; gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = n > 0 ? n - 1 : 0; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= n) gs->menuIdx = 0; }
+        if (ch == KEY_LEFT ) { gs->shopSlot--; if (gs->shopSlot < 0) gs->shopSlot = NUM_SLOTS - 1; gs->menuIdx = 0; }
+        if (ch == KEY_RIGHT) { gs->shopSlot++; if (gs->shopSlot >= NUM_SLOTS) gs->shopSlot = 0; gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             ItemDef it;
             shop_get_item(gs, gs->menuIdx, &it);
@@ -2584,8 +2584,8 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_CHARACTER:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_STATS - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_STATS) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_STATS - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_STATS) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->hero.talentPoints <= 0) {
                 ui_log(gs, "No talent points available.", CP_RED);
@@ -2603,8 +2603,8 @@ void ui_handle_key(GameState *gs, int ch) {
 
     case SCR_SKILLS: {
         int total = MAX_SKILL_TIERS * 2;
-        if (ch == KEY_UP || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = total - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= total) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = total - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= total) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             int tier = gs->menuIdx / 2;
             int option = gs->menuIdx % 2;
@@ -2638,8 +2638,8 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_CONFIRM_QUIT:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 1) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > 1) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->menuIdx == 1) {
                 save_game(gs);
@@ -2653,8 +2653,8 @@ void ui_handle_key(GameState *gs, int ch) {
         break;
 
     case SCR_ENCYCLOPEDIA:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 8; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 8) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 8; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > 8) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             switch (gs->menuIdx) {
             case 0: gs->screen = SCR_ENCY_CLASSES;  gs->menuIdx = 0; break;
@@ -2672,14 +2672,14 @@ void ui_handle_key(GameState *gs, int ch) {
         break;
 
     case SCR_ENCY_CLASSES:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_CLASSES - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_CLASSES) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_CLASSES - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_CLASSES) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 0; }
         break;
 
     case SCR_ENCY_STATS:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_STATS - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_STATS) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_STATS - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_STATS) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 2; }
         break;
 
@@ -2687,25 +2687,25 @@ void ui_handle_key(GameState *gs, int ch) {
         int items[200];
         int cm = (1 << gs->hero.classId);
         int nItems = ency_items_for_slot(gs->encycSlot, cm, items, 200);
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nItems > 0 ? nItems - 1 : 0; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= nItems) gs->menuIdx = 0; }
-        if (ch == KEY_LEFT  || ch == 'a') { gs->encycSlot--; if (gs->encycSlot < 0) gs->encycSlot = NUM_SLOTS - 1; gs->menuIdx = 0; }
-        if (ch == KEY_RIGHT || ch == 'd') { gs->encycSlot++; if (gs->encycSlot >= NUM_SLOTS) gs->encycSlot = 0; gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nItems > 0 ? nItems - 1 : 0; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nItems) gs->menuIdx = 0; }
+        if (ch == KEY_LEFT ) { gs->encycSlot--; if (gs->encycSlot < 0) gs->encycSlot = NUM_SLOTS - 1; gs->menuIdx = 0; }
+        if (ch == KEY_RIGHT) { gs->encycSlot++; if (gs->encycSlot >= NUM_SLOTS) gs->encycSlot = 0; gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 3; }
         break;
     }
 
     case SCR_ENCY_DUNGEONS:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_DUNGEONS - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_DUNGEONS) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_DUNGEONS - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_DUNGEONS) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 4; }
         break;
 
     case SCR_ENCY_ENEMIES: {
         int enemies[50];
         int nEnemies = ency_normal_enemies(enemies, 50);
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nEnemies > 0 ? nEnemies - 1 : 0; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= nEnemies) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nEnemies > 0 ? nEnemies - 1 : 0; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nEnemies) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 5; }
         break;
     }
@@ -2713,38 +2713,38 @@ void ui_handle_key(GameState *gs, int ch) {
     case SCR_ENCY_BOSSES: {
         int bosses[10];
         int nBosses = ency_bosses(bosses, 10);
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nBosses > 0 ? nBosses - 1 : 0; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= nBosses) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nBosses > 0 ? nBosses - 1 : 0; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nBosses) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 6; }
         break;
     }
 
     case SCR_ENCY_SKILLS: {
         int total = MAX_SKILL_TIERS * 2;
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = total - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= total) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = total - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= total) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 1; }
         break;
     }
 
     case SCR_ENCY_COMBAT: {
         int nTopics = 14;
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 7; }
         break;
     }
 
     case SCR_ACHIEVEMENTS:
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_ACHIEVEMENTS - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= NUM_ACHIEVEMENTS) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_ACHIEVEMENTS - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_ACHIEVEMENTS) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 8; }
         break;
 
     case SCR_TITLES: {
         int maxTitle = NUM_TITLES;
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxTitle; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > maxTitle) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = maxTitle; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > maxTitle) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->menuIdx == 0) {
                 gs->hero.activeTitle = 0;
@@ -2765,8 +2765,8 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_BULK_SELL: {
-        if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 3; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx > 3) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 3; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > 3) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             int threshold = gs->menuIdx + 1;
             int totalGold = 0, count = 0;
