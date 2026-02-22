@@ -1086,20 +1086,19 @@ static void render_ency_enemies_detail(GameState *gs) {
     }
 
     wattron(w, COLOR_PAIR(CP_WHITE));
-    for (int i = 0; i < ART_LINES; i++) {
-        int xoff = (RIGHT_W - ART_COLS) / 2 - 2;
-        if (xoff < 1) xoff = 1;
-        mvwprintw(w, 1 + i, xoff, "%s", et->art[i]);
-    }
+    for (int i = 0; i < ART_LINES; i++)
+        mvwprintw(w, 1 + i, 2, "%s", et->art[i]);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
+    int tc = ART_COLS + 4;
     wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-    mvwprintw(w, 6, 2, "%-20s", et->name);
+    mvwprintw(w, 1, tc, "%s", et->name);
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
     wattron(w, COLOR_PAIR(CP_WHITE));
-    wprintw(w, " HP%d ATK%d DEF%d", et->hp, et->attack, et->defense);
-    mvwprintw(w, 7, 2, "SPD%d  XP%d  Gold%d  %s",
-              et->speed, et->xpReward, et->goldReward, ency_enemy_dungeon(enemies[gs->menuIdx]));
+    mvwprintw(w, 2, tc, "HP %d  ATK %d", et->hp, et->attack);
+    mvwprintw(w, 3, tc, "DEF %d  SPD %d", et->defense, et->speed);
+    mvwprintw(w, 4, tc, "XP %d  Gold %d", et->xpReward, et->goldReward);
+    mvwprintw(w, 5, tc, "%s", ency_enemy_dungeon(enemies[gs->menuIdx]));
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     wnoutrefresh(w);
@@ -1126,7 +1125,7 @@ static void render_ency_bosses(GameState *gs) {
         if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
         else     wattron(w, COLOR_PAIR(CP_MAGENTA));
 
-        mvwprintw(w, 3 + i * 2, 1, "%s%-21.21s", sel ? " > " : "   ", et->name);
+        mvwprintw(w, 3 + i, 1, "%s%-21.21s", sel ? " > " : "   ", et->name);
 
         if (sel) wattroff(w, COLOR_PAIR(CP_SELECTED));
         else     wattroff(w, COLOR_PAIR(CP_MAGENTA));
@@ -1160,20 +1159,19 @@ static void render_ency_bosses_detail(GameState *gs) {
     }
 
     wattron(w, COLOR_PAIR(CP_WHITE));
-    for (int i = 0; i < ART_LINES; i++) {
-        int xoff = (RIGHT_W - ART_COLS) / 2 - 2;
-        if (xoff < 1) xoff = 1;
-        mvwprintw(w, 1 + i, xoff, "%s", et->art[i]);
-    }
+    for (int i = 0; i < ART_LINES; i++)
+        mvwprintw(w, 1 + i, 2, "%s", et->art[i]);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
+    int tc = ART_COLS + 4;
     wattron(w, COLOR_PAIR(CP_MAGENTA) | A_BOLD);
-    mvwprintw(w, 6, 2, "%-20s", et->name);
+    mvwprintw(w, 1, tc, "%s", et->name);
     wattroff(w, COLOR_PAIR(CP_MAGENTA) | A_BOLD);
     wattron(w, COLOR_PAIR(CP_WHITE));
-    wprintw(w, " HP%d ATK%d DEF%d", et->hp, et->attack, et->defense);
-    mvwprintw(w, 7, 2, "SPD%d  XP%d  Gold%d  %s",
-              et->speed, et->xpReward, et->goldReward, ency_enemy_dungeon(bosses[gs->menuIdx]));
+    mvwprintw(w, 2, tc, "HP %d  ATK %d", et->hp, et->attack);
+    mvwprintw(w, 3, tc, "DEF %d  SPD %d", et->defense, et->speed);
+    mvwprintw(w, 4, tc, "XP %d  Gold %d", et->xpReward, et->goldReward);
+    mvwprintw(w, 5, tc, "%s", ency_enemy_dungeon(bosses[gs->menuIdx]));
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     wnoutrefresh(w);
@@ -1313,23 +1311,29 @@ static void render_ency_dungeons_detail(GameState *gs) {
     mvwprintw(w, 2, 2, "%s", dg->description);
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
+    /* Comma-separated enemy list with line wrapping */
+    int row = 3, col = 2;
     wattron(w, COLOR_PAIR(CP_WHITE));
-    mvwprintw(w, 3, 2, "Enemies:");
+    mvwprintw(w, row, col, "Enemies: ");
+    col += 9;
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
-    int row = 4;
-    for (int e = 0; e < dg->numEnemies && row < 9; e++) {
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    for (int e = 0; e < dg->numEnemies; e++) {
         const EnemyTemplate *et = data_enemy(dg->enemyIdx[e]);
         if (!et) continue;
-        wattron(w, COLOR_PAIR(CP_DEFAULT));
-        mvwprintw(w, row++, 3, "%s", et->name);
-        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        const char *sep = (e < dg->numEnemies - 1) ? ", " : "";
+        int len = (int)strlen(et->name) + (int)strlen(sep);
+        if (col + len > RIGHT_W - 2) { row++; col = 4; }
+        mvwprintw(w, row, col, "%s%s", et->name, sep);
+        col += len;
     }
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
     const EnemyTemplate *boss = data_enemy(dg->bossIdx);
     if (boss) {
         wattron(w, COLOR_PAIR(CP_MAGENTA));
-        mvwprintw(w, row, 2, "Boss: %s", boss->name);
+        mvwprintw(w, row + 1, 2, "Boss: %s", boss->name);
         wattroff(w, COLOR_PAIR(CP_MAGENTA));
     }
 
