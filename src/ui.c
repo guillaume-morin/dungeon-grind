@@ -2220,8 +2220,10 @@ static void render_enemy_panel(GameState *gs) {
         if (secs > 0.1f) {
             int dps = (int)(gs->combatDmgDealt / secs);
             int dtps = (int)(gs->combatDmgTaken / secs);
+            char buf[32];
+            int len = snprintf(buf, sizeof(buf), "DPS:%d DTPS:%d", dps, dtps);
             wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, 7, 2, "DPS:%d  DTPS:%d", dps, dtps);
+            mvwprintw(w, 1, RIGHT_W - len - 2, "%s", buf);
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
     }
