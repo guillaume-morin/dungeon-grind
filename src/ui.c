@@ -2026,10 +2026,10 @@ static void render_bulk_sell(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
     const char *labels[] = {
-        "Sell all Common",
-        "Sell all Common+Uncommon",
-        "Sell all below Epic",
-        "Sell all below Legendary",
+        "Sell below Uncommon",
+        "Sell below Rare",
+        "Sell below Epic",
+        "Sell below Legendary",
     };
 
     int row = 4;
@@ -2042,19 +2042,19 @@ static void render_bulk_sell(GameState *gs) {
         else if (count > 0) wattron(w, COLOR_PAIR(CP_WHITE));
         else wattron(w, COLOR_PAIR(CP_DEFAULT));
 
-        mvwprintw(w, row, 1, "%s%-24.24s", sel ? "> " : "  ", labels[i]);
+        mvwprintw(w, row, 1, "%s%-24.24s", sel ? " > " : "   ", labels[i]);
         wattroff(w, COLOR_PAIR(CP_SELECTED));
         wattroff(w, COLOR_PAIR(CP_WHITE));
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
         if (count > 0) {
             wattron(w, COLOR_PAIR(CP_YELLOW));
-            mvwprintw(w, row + 1, 3, "%d item%s for %dg",
+            mvwprintw(w, row + 1, 4, "%d item%s for %dg",
                       count, count > 1 ? "s" : "", gold);
             wattroff(w, COLOR_PAIR(CP_YELLOW));
         } else {
             wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row + 1, 3, "(nothing to sell)");
+            mvwprintw(w, row + 1, 4, "(nothing to sell)");
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
         row += 3;
