@@ -66,6 +66,10 @@ void ui_init(GameState *gs) {
     init_pair(CP_BORDER,   COLOR_YELLOW,  bg);
     init_pair(CP_SELECTED, COLOR_BLACK,   COLOR_WHITE);
     init_pair(CP_ORANGE,   COLOR_RED,     bg);
+    init_pair(CP_SEL_GREEN,   COLOR_BLACK, COLOR_GREEN);
+    init_pair(CP_SEL_BLUE,    COLOR_BLACK, COLOR_BLUE);
+    init_pair(CP_SEL_MAGENTA, COLOR_BLACK, COLOR_MAGENTA);
+    init_pair(CP_SEL_YELLOW,  COLOR_BLACK, COLOR_YELLOW);
 
     gs->wHeader = newwin(HEADER_H, SCREEN_W, 0, 0);
     gs->wLeft   = newwin(PANEL_H, LEFT_W, HEADER_H, 0);
@@ -464,6 +468,16 @@ static int inv_build_view(const Hero *h, int filter, int sort, int *out, int max
     return n;
 }
 
+static int rarity_sel_color(int rarity) {
+    switch (data_rarity_color(rarity)) {
+    case CP_GREEN:   return CP_SEL_GREEN;
+    case CP_BLUE:    return CP_SEL_BLUE;
+    case CP_MAGENTA: return CP_SEL_MAGENTA;
+    case CP_YELLOW:  return CP_SEL_YELLOW;
+    default:         return CP_SELECTED;
+    }
+}
+
 static void render_equipment(GameState *gs) {
     WINDOW *w = gs->wLeft;
     werase(w);
@@ -481,18 +495,19 @@ static void render_equipment(GameState *gs) {
 
         if (gs->hero.hasEquip[s]) {
             int rc = data_rarity_color(gs->hero.equipment[s].rarity);
-            if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+            int sc = rarity_sel_color(gs->hero.equipment[s].rarity);
+            if (sel) wattron(w, COLOR_PAIR(sc));
             else     wattron(w, COLOR_PAIR(rc));
             mvwprintw(w, row, 1, "%s%-4s%-18.18s",
                       sel ? " > " : "   ", SLOT_ABBR[s], gs->hero.equipment[s].name);
+            wattroff(w, COLOR_PAIR(sel ? sc : rc));
         } else {
             if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
             else     wattron(w, COLOR_PAIR(CP_DEFAULT));
             mvwprintw(w, row, 1, "%s%-4s--",
                       sel ? " > " : "   ", SLOT_ABBR[s]);
+            wattroff(w, COLOR_PAIR(sel ? CP_SELECTED : CP_DEFAULT));
         }
-        wattroff(w, COLOR_PAIR(CP_SELECTED));
-        wattroff(w, COLOR_PAIR(CP_DEFAULT));
         row++;
     }
 
@@ -524,8 +539,9 @@ static void render_equipment(GameState *gs) {
         int invI = viewIdx[vi];
         int sel = (gs->menuIdx == NUM_SLOTS + vi);
         int rc = data_rarity_color(gs->hero.inventory[invI].rarity);
+        int sc = rarity_sel_color(gs->hero.inventory[invI].rarity);
 
-        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        if (sel) wattron(w, COLOR_PAIR(sc));
         else     wattron(w, COLOR_PAIR(rc));
 
         if (gs->equipFilter > 0)
@@ -536,8 +552,7 @@ static void render_equipment(GameState *gs) {
                       sel ? " > " : "   ", SLOT_CHAR[gs->hero.inventory[invI].slot],
                       gs->hero.inventory[invI].name);
 
-        wattroff(w, COLOR_PAIR(CP_SELECTED));
-        wattroff(w, COLOR_PAIR(rc));
+        wattroff(w, COLOR_PAIR(sel ? sc : rc));
         row++;
     }
 
@@ -623,14 +638,14 @@ static void render_shop(GameState *gs) {
         int canBuy = (gs->hero.gold >= it.price && gs->hero.level >= it.levelReq);
         int rc = data_rarity_color(it.rarity);
 
-        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        int sc = rarity_sel_color(it.rarity);
+        if (sel) wattron(w, COLOR_PAIR(canBuy ? sc : CP_SELECTED));
         else     wattron(w, COLOR_PAIR(canBuy ? rc : CP_RED));
 
         mvwprintw(w, row, 1, "%s%-16.16s %4dg",
                   sel ? ">" : " ", it.name, it.price);
 
-        if (sel) wattroff(w, COLOR_PAIR(CP_SELECTED));
-        else     wattroff(w, COLOR_PAIR(canBuy ? rc : CP_RED));
+        wattroff(w, A_COLOR);
         row++;
     }
 
@@ -701,7 +716,7 @@ static void render_character(GameState *gs) {
     mvwprintw(w, row++, 2, "Dodge %.1f%% DR %.1f%%", es.dodgeChance * 100, es.dmgReduction * 100);
     if (es.blockChance > 0)
         mvwprintw(w, row++, 2, "Block %.1f%%", es.blockChance * 100);
-    mvwprintw(w, row++, 2, "Atk %.2f/s", 1000.0f / es.tickRate);
+    mvwprintw(w, row++, 2, "Atk %.3f/s", 1000.0f / es.tickRate);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     row++;
@@ -1591,8 +1606,8 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
             wattroff(w, COLOR_PAIR(CP_WHITE));
         }
 
-        if (cmp && diff != 0) {
-            int dc = diff > 0 ? CP_GREEN : CP_RED;
+        if (cmp) {
+            int dc = diff > 0 ? CP_GREEN : (diff < 0 ? CP_RED : CP_DEFAULT);
             wattron(w, COLOR_PAIR(dc));
             wprintw(w, "(%+d)", diff);
             wattroff(w, COLOR_PAIR(dc));
@@ -1720,10 +1735,10 @@ static void render_stat_detail(GameState *gs) {
 
     if (nxt.tickRate != cur.tickRate) {
         wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "Atk %.2f/s", 1000.0f / cur.tickRate);
+        mvwprintw(w, row, 2, "Atk %.3f/s", 1000.0f / cur.tickRate);
         wattroff(w, COLOR_PAIR(CP_WHITE));
         wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %.2f/s", 1000.0f / nxt.tickRate);
+        wprintw(w, " > %.3f/s", 1000.0f / nxt.tickRate);
         wattroff(w, COLOR_PAIR(CP_GREEN));
     }
     if (nxt.healPower != cur.healPower) {
@@ -2246,14 +2261,20 @@ static void render_enemy_panel(GameState *gs) {
         wattroff(w, COLOR_PAIR(CP_WHITE));
     }
 
-    int barW = RIGHT_W - 6;
+    char hpBuf[24];
+    int hpLen = snprintf(hpBuf, sizeof(hpBuf), "%d/%d", e->hp, e->maxHp);
+    int hpCol = RIGHT_W - 2 - hpLen;
+    if (hpCol < 23) hpCol = 23;
+    int barLen = hpCol - 23;
+    if (barLen < 1) barLen = 1;
+
     int nameColor = gs->isElite ? CP_YELLOW : (gs->bossActive ? CP_MAGENTA : CP_WHITE);
     wattron(w, COLOR_PAIR(nameColor) | A_BOLD);
     mvwprintw(w, 6, 2, "%-20s", e->name);
     wattroff(w, COLOR_PAIR(nameColor) | A_BOLD);
-    draw_bar(w, 6, 22, barW - 22, e->hp, e->maxHp, CP_RED, CP_DEFAULT);
+    draw_bar(w, 6, 22, barLen, e->hp, e->maxHp, CP_RED, CP_DEFAULT);
     wattron(w, COLOR_PAIR(CP_WHITE));
-    mvwprintw(w, 6, barW - 1, "%d/%d", e->hp, e->maxHp);
+    mvwprintw(w, 6, hpCol, "%s", hpBuf);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     if (gs->combatTicks > 0) {

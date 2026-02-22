@@ -99,6 +99,10 @@ enum Screen {
 #define CP_BORDER    10
 #define CP_SELECTED  11
 #define CP_ORANGE    12
+#define CP_SEL_GREEN   13
+#define CP_SEL_BLUE    14
+#define CP_SEL_MAGENTA 15
+#define CP_SEL_YELLOW  16
 
 /* ── data definitions (read-only templates) ────────────────────────── */
 
