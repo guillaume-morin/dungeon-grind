@@ -2450,7 +2450,7 @@ void ui_handle_key(GameState *gs, int ch) {
         if (totalItems < NUM_SLOTS) totalItems = NUM_SLOTS;
 
         if (ch == KEY_UP   || ch == 'w') { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = totalItems - 1; }
-        if (ch == KEY_DOWN || ch == 's') { gs->menuIdx++; if (gs->menuIdx >= totalItems) gs->menuIdx = 0; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= totalItems) gs->menuIdx = 0; }
 
         if (ch == KEY_LEFT || ch == 'a') {
             gs->equipFilter--;
@@ -2470,7 +2470,7 @@ void ui_handle_key(GameState *gs, int ch) {
             if (gs->menuIdx >= NUM_SLOTS && viewN == 0)
                 gs->menuIdx = NUM_SLOTS - 1;
         }
-        if (ch == 'S') {
+        if (ch == 's' || ch == 'S') {
             gs->equipSort = (gs->equipSort + 1) % NUM_EQUIP_SORTS;
         }
 
