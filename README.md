@@ -66,6 +66,56 @@ The Makefile auto-detects Windows (via the `OS` environment variable) and links 
 
 Save files are stored in `~/.dungeon-grind/` on macOS/Linux and `%APPDATA%\.dungeon-grind\` on Windows.
 
+## Test the Latest Build
+
+Never used a terminal or GitHub before? Follow these steps exactly.
+
+### 1. Install Git
+
+**macOS:** Open Terminal (search "Terminal" in Spotlight). Type:
+```bash
+xcode-select --install
+```
+Click "Install" when prompted. This gives you `git`, `gcc`, and `make`.
+
+**Linux (Ubuntu/Debian):** Open a terminal and type:
+```bash
+sudo apt update && sudo apt install git build-essential libncurses-dev
+```
+
+**Windows:** Install [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) first, then follow the Linux steps inside the WSL terminal.
+
+### 2. Download the Game
+
+```bash
+git clone https://github.com/guillaume-morin/dungeon-grind.git
+cd dungeon-grind
+```
+
+### 3. Build and Run
+
+```bash
+make
+./dungeon-grind
+```
+
+That's it. The game runs in your terminal. Make sure your terminal window is at least 80 columns × 24 rows (the default size on most systems).
+
+### 4. Update to the Latest Version
+
+Whenever you want to get new updates:
+
+```bash
+cd dungeon-grind
+git pull
+make clean && make
+./dungeon-grind
+```
+
+Your save files are stored separately in `~/.dungeon-grind/` and won't be affected by updates.
+
+---
+
 ## How It Works
 
 You pick a class, name your hero, and select a dungeon. Combat runs on a tick timer — the hero auto-attacks, uses skills, takes damage, and loots. Your job is to allocate talent points, choose skills, buy and equip gear, and decide when to push into harder dungeons.
