@@ -798,7 +798,7 @@ static void render_encyclopedia(GameState *gs) {
     mvwprintw(w, 1, 2, "Encyclopedia");
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
-    const char *categories[] = { "Classes", "Skills", "Stats", "Items", "Dungeons", "Enemies", "Bosses", "Combat", "Achievements" };
+    const char *categories[] = { "Classes", "Stats", "Skills", "Dungeons", "Enemies", "Bosses", "Items", "Combat", "Achievements" };
     for (int i = 0; i < 9; i++) {
         if (i == gs->menuIdx) {
             wattron(w, COLOR_PAIR(CP_SELECTED));
@@ -826,12 +826,12 @@ static void render_encyclopedia_detail(GameState *gs) {
 
     const char *descriptions[] = {
         "Browse all four hero classes.",
-        "View all skill choices for your class.",
         "Learn what each stat does.",
-        "View equipment organized by slot.",
+        "View all skill choices for your class.",
         "Explore dungeons and their inhabitants.",
         "Study the creatures in each dungeon.",
         "Face the guardians that rule each dungeon.",
+        "View equipment organized by slot.",
         "How damage, ticks, and combat mechanics work.",
         "View milestones and their permanent bonuses."
     };
@@ -1360,11 +1360,12 @@ static void render_ency_combat(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
     const char *topics[] = {
-        "Tick System", "Hero Damage", "Enemy Armor", "Critical Hits",
-        "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
-        "Buffs & Effects", "Shields & Ward", "Stun & Slow",
-        "Death & Revive", "Boss Encounters", "Loot System",
-        "Resource & Regen", "Hard Mode", "Offline Progress"
+        "Tick System", "Hero Damage", "Critical Hits",
+        "Enemy Armor", "Damage Reduction",
+        "Dodge & Evasion", "Block (Warrior)", "Shields & Ward",
+        "Buffs & Effects", "Stun & Slow",
+        "Resource & Regen", "Death & Revive", "Boss Encounters",
+        "Loot System", "Hard Mode", "Offline Progress"
     };
     int nTopics = 16;
 
@@ -1394,11 +1395,12 @@ static void render_ency_combat_detail(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_BORDER));
 
     const char *topics[] = {
-        "Tick System", "Hero Damage", "Enemy Armor", "Critical Hits",
-        "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
-        "Buffs & Effects", "Shields & Ward", "Stun & Slow",
-        "Death & Revive", "Boss Encounters", "Loot System",
-        "Resource & Regen", "Hard Mode", "Offline Progress"
+        "Tick System", "Hero Damage", "Critical Hits",
+        "Enemy Armor", "Damage Reduction",
+        "Dodge & Evasion", "Block (Warrior)", "Shields & Ward",
+        "Buffs & Effects", "Stun & Slow",
+        "Resource & Regen", "Death & Revive", "Boss Encounters",
+        "Loot System", "Hard Mode", "Offline Progress"
     };
 
     if (gs->menuIdx < 0 || gs->menuIdx >= 16) {
@@ -1419,53 +1421,53 @@ static void render_ency_combat_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "Base ~1.25 atk/s, scales with SPD stat.");
         mvwprintw(w, row++, 2, "Higher SPD = more attacks per second.");
         break;
-    case 1: /* Hero Damage — condense to 4 lines (wEnemy has 4 content rows) */
+    case 1: /* Hero Damage */
         mvwprintw(w, row++, 2, "War STR*1.5  Rog AGI*1.4+STR*0.4");
         mvwprintw(w, row++, 2, "Mage INT*1.5+WIS*0.5  Pri WIS*1.2");
         mvwprintw(w, row++, 2, "Rogue gets 1.8x crit multiplier.");
         mvwprintw(w, row++, 2, "+/-10%% random variance on every hit.");
         break;
-    case 2: /* Enemy Armor */
-        mvwprintw(w, row++, 2, "Enemy damage reduction:");
-        mvwprintw(w, row++, 2, "  armor = DEF^2 / (DEF + 100)");
-        mvwprintw(w, row++, 2, "Your hit = baseDmg - armor (min 1)");
-        mvwprintw(w, row++, 2, "Some skills ignore armor entirely.");
-        break;
-    case 3: /* Critical Hits */
+    case 2: /* Critical Hits */
         mvwprintw(w, row++, 2, "Crit chance: AGI / 300 (max 50%%)");
         mvwprintw(w, row++, 2, "Crit multiplier: 1.5x (Rogue: 1.8x)");
         mvwprintw(w, row++, 2, "Buff critDmgBonus stacks additively.");
         mvwprintw(w, row++, 2, "Crit check happens after dmg variance.");
         break;
-    case 4: /* Dodge & Evasion */
-        mvwprintw(w, row++, 2, "Dodge chance: AGI / 300 (max 35%%)");
-        mvwprintw(w, row++, 2, "Buff dodgeBonus stacks additively.");
-        mvwprintw(w, row++, 2, "dodgeNext buff: guaranteed next dodge.");
-        mvwprintw(w, row++, 2, "Dodged attacks deal zero damage.");
+    case 3: /* Enemy Armor */
+        mvwprintw(w, row++, 2, "Enemy damage reduction:");
+        mvwprintw(w, row++, 2, "  armor = DEF^2 / (DEF + 100)");
+        mvwprintw(w, row++, 2, "Your hit = baseDmg - armor (min 1)");
+        mvwprintw(w, row++, 2, "Some skills ignore armor entirely.");
         break;
-    case 5: /* Block (Warrior) */
-        mvwprintw(w, row++, 2, "Warrior only. DEF / 250 (max 30%%)");
-        mvwprintw(w, row++, 2, "Blocks reduce damage by 30%%.");
-        mvwprintw(w, row++, 2, "Block check is after dodge check.");
-        mvwprintw(w, row++, 2, "Other classes cannot block.");
-        break;
-    case 6: /* Damage Reduction */
+    case 4: /* Damage Reduction */
         mvwprintw(w, row++, 2, "%% DR: DEF / (DEF + 100) (max 50%%)");
         mvwprintw(w, row++, 2, "Flat DR: WIS * 0.15");
         mvwprintw(w, row++, 2, "Applied before block, after variance.");
         mvwprintw(w, row++, 2, "Both stack (%% first, flat second).");
         break;
-    case 7: /* Buffs & Effects */
-        mvwprintw(w, row++, 2, "Skills create timed buffs (ticksLeft).");
-        mvwprintw(w, row++, 2, "damageMul, HoT, DoT, dodge, crit...");
-        mvwprintw(w, row++, 2, "Buffs tick each combat step.");
-        mvwprintw(w, row++, 2, "Max 10 active buffs at once.");
+    case 5: /* Dodge & Evasion */
+        mvwprintw(w, row++, 2, "Dodge chance: AGI / 300 (max 35%%)");
+        mvwprintw(w, row++, 2, "Buff dodgeBonus stacks additively.");
+        mvwprintw(w, row++, 2, "dodgeNext buff: guaranteed next dodge.");
+        mvwprintw(w, row++, 2, "Dodged attacks deal zero damage.");
         break;
-    case 8: /* Shields & Ward */
+    case 6: /* Block (Warrior) */
+        mvwprintw(w, row++, 2, "Warrior only. DEF / 250 (max 30%%)");
+        mvwprintw(w, row++, 2, "Blocks reduce damage by 30%%.");
+        mvwprintw(w, row++, 2, "Block check is after dodge check.");
+        mvwprintw(w, row++, 2, "Other classes cannot block.");
+        break;
+    case 7: /* Shields & Ward */
         mvwprintw(w, row++, 2, "buffShieldPct: absorb shield (HP%%).");
         mvwprintw(w, row++, 2, "Shields drain before HP damage.");
         mvwprintw(w, row++, 2, "Multiple shields stack, drain in order.");
         mvwprintw(w, row++, 2, "Mana Shield: damage costs mana instead.");
+        break;
+    case 8: /* Buffs & Effects */
+        mvwprintw(w, row++, 2, "Skills create timed buffs (ticksLeft).");
+        mvwprintw(w, row++, 2, "damageMul, HoT, DoT, dodge, crit...");
+        mvwprintw(w, row++, 2, "Buffs tick each combat step.");
+        mvwprintw(w, row++, 2, "Max 10 active buffs at once.");
         break;
     case 9: /* Stun & Slow */
         mvwprintw(w, row++, 2, "Stunned enemies skip their attack.");
@@ -1473,29 +1475,29 @@ static void render_ency_combat_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "Duration in ticks, decrements each tick.");
         mvwprintw(w, row++, 2, "Hero still attacks stunned enemies.");
         break;
-    case 10: /* Death & Revive */
+    case 10: /* Resource & Regen */
+        mvwprintw(w, row++, 2, "Each class has a resource (Rage, etc).");
+        mvwprintw(w, row++, 2, "Regen per tick: class resourceRegen.");
+        mvwprintw(w, row++, 2, "VIT heals VIT*2 HP on each kill.");
+        mvwprintw(w, row++, 2, "Level-up fully restores HP and resource.");
+        break;
+    case 11: /* Death & Revive */
         mvwprintw(w, row++, 2, "On death: lose 10%% gold, clear buffs.");
         mvwprintw(w, row++, 2, "Revive after 4 ticks at full HP/mana.");
         mvwprintw(w, row++, 2, "Dungeon kill count resets to 0.");
         mvwprintw(w, row++, 2, "Boss progress is lost on death.");
         break;
-    case 11: /* Boss Encounters */
+    case 12: /* Boss Encounters */
         mvwprintw(w, row++, 2, "Boss spawns after 50 normal kills.");
         mvwprintw(w, row++, 2, "6 tick delay after boss kill.");
         mvwprintw(w, row++, 2, "Kill count resets after boss phase.");
         mvwprintw(w, row++, 2, "Bosses are always the dungeon guardian.");
         break;
-    case 12: /* Loot System */
+    case 13: /* Loot System */
         mvwprintw(w, row++, 2, "Normal: roll vs enemy dropChance.");
         mvwprintw(w, row++, 2, "Boss: guaranteed weighted rarity drop.");
         mvwprintw(w, row++, 2, "Weights 50/30/12/6/2 (Com > Legendary)");
         mvwprintw(w, row++, 2, "Dungeon caps max normal drop rarity.");
-        break;
-    case 13: /* Resource & Regen */
-        mvwprintw(w, row++, 2, "Each class has a resource (Rage, etc).");
-        mvwprintw(w, row++, 2, "Regen per tick: class resourceRegen.");
-        mvwprintw(w, row++, 2, "VIT heals VIT*2 HP on each kill.");
-        mvwprintw(w, row++, 2, "Level-up fully restores HP and resource.");
         break;
     case 14: /* Hard Mode */
         mvwprintw(w, row++, 2, "[H] in dungeon select. Beat boss first.");
@@ -2684,12 +2686,12 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == '\n' || ch == KEY_ENTER) {
             switch (gs->menuIdx) {
             case 0: gs->screen = SCR_ENCY_CLASSES;  gs->menuIdx = 0; break;
-            case 1: gs->screen = SCR_ENCY_SKILLS;   gs->menuIdx = 0; break;
-            case 2: gs->screen = SCR_ENCY_STATS;    gs->menuIdx = 0; break;
-            case 3: gs->screen = SCR_ENCY_ITEMS;    gs->menuIdx = 0; gs->encycSlot = 0; break;
-            case 4: gs->screen = SCR_ENCY_DUNGEONS; gs->menuIdx = 0; break;
-            case 5: gs->screen = SCR_ENCY_ENEMIES;  gs->menuIdx = 0; break;
-            case 6: gs->screen = SCR_ENCY_BOSSES;   gs->menuIdx = 0; break;
+            case 1: gs->screen = SCR_ENCY_STATS;    gs->menuIdx = 0; break;
+            case 2: gs->screen = SCR_ENCY_SKILLS;   gs->menuIdx = 0; break;
+            case 3: gs->screen = SCR_ENCY_DUNGEONS; gs->menuIdx = 0; break;
+            case 4: gs->screen = SCR_ENCY_ENEMIES;  gs->menuIdx = 0; break;
+            case 5: gs->screen = SCR_ENCY_BOSSES;   gs->menuIdx = 0; break;
+            case 6: gs->screen = SCR_ENCY_ITEMS;    gs->menuIdx = 0; gs->encycSlot = 0; break;
             case 7: gs->screen = SCR_ENCY_COMBAT;   gs->menuIdx = 0; break;
             case 8: gs->screen = SCR_ACHIEVEMENTS;  gs->menuIdx = 0; break;
             }
@@ -2706,7 +2708,7 @@ void ui_handle_key(GameState *gs, int ch) {
     case SCR_ENCY_STATS:
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_STATS - 1; }
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_STATS) gs->menuIdx = 0; }
-        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 2; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 1; }
         break;
 
     case SCR_ENCY_ITEMS: {
@@ -2717,14 +2719,14 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nItems) gs->menuIdx = 0; }
         if (ch == KEY_LEFT ) { gs->encycSlot--; if (gs->encycSlot < 0) gs->encycSlot = NUM_SLOTS - 1; gs->menuIdx = 0; }
         if (ch == KEY_RIGHT) { gs->encycSlot++; if (gs->encycSlot >= NUM_SLOTS) gs->encycSlot = 0; gs->menuIdx = 0; }
-        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 3; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 6; }
         break;
     }
 
     case SCR_ENCY_DUNGEONS:
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_DUNGEONS - 1; }
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_DUNGEONS) gs->menuIdx = 0; }
-        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 4; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 3; }
         break;
 
     case SCR_ENCY_ENEMIES: {
@@ -2732,7 +2734,7 @@ void ui_handle_key(GameState *gs, int ch) {
         int nEnemies = ency_normal_enemies(enemies, 50);
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nEnemies > 0 ? nEnemies - 1 : 0; }
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nEnemies) gs->menuIdx = 0; }
-        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 5; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 4; }
         break;
     }
 
@@ -2741,7 +2743,7 @@ void ui_handle_key(GameState *gs, int ch) {
         int nBosses = ency_bosses(bosses, 10);
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nBosses > 0 ? nBosses - 1 : 0; }
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nBosses) gs->menuIdx = 0; }
-        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 6; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 5; }
         break;
     }
 
@@ -2749,7 +2751,7 @@ void ui_handle_key(GameState *gs, int ch) {
         int total = MAX_SKILL_TIERS * 2;
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = total - 1; }
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= total) gs->menuIdx = 0; }
-        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 1; }
+        if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 2; }
         break;
     }
 
