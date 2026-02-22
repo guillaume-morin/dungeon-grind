@@ -201,7 +201,7 @@ static const DungeonDef DUNGEONS[NUM_DUNGEONS] = {
     { "The Molten Core",     55, "Rivers of magma beneath a dying volcano.",
       { E_MAGMA_ELEM, E_FIRE_IMP, E_LAVA_LURKER, E_INFERNAL_GUARD, E_SCORCHED_WYVERN }, 5, E_BOSS_IGNIS, CP_RED },
     { "Frozen Citadel",      66, "An ancient fortress locked in eternal winter.",
-      { E_FROST_REVENANT, E_ICE_WRAITH, E_GLACIAL_GOLEM, E_FROZEN_ARCHER, E_WINTER_KNIGHT }, 5, E_BOSS_CRYOLITH, CP_CYAN },
+      { E_FROST_REVENANT, E_ICE_WRAITH, E_GLACIAL_GOLEM, E_FROZEN_ARCHER, E_WINTER_KNIGHT }, 5, E_BOSS_CRYOLITH, CP_BLUE },
     { "The Void Nexus",      78, "A tear between dimensions, leaking raw chaos.",
       { E_VOID_SPAWN, E_ASTRAL_DEVOURER, E_NULL_WALKER, E_COSMIC_HORROR, E_RIFT_GUARDIAN }, 5, E_BOSS_ZHARKUL, CP_MAGENTA },
     { "Throne of Eternity",  90, "Beyond time itself. The final test of a hero.",
