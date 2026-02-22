@@ -2049,12 +2049,12 @@ static void render_bulk_sell(GameState *gs) {
 
         if (count > 0) {
             wattron(w, COLOR_PAIR(CP_YELLOW));
-            mvwprintw(w, row + 1, 5, "%d item%s for %dg",
+            mvwprintw(w, row + 1, 4, "%d item%s for %dg",
                       count, count > 1 ? "s" : "", gold);
             wattroff(w, COLOR_PAIR(CP_YELLOW));
         } else {
             wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row + 1, 5, "(nothing to sell)");
+            mvwprintw(w, row + 1, 4, "(nothing to sell)");
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
         row += 3;
