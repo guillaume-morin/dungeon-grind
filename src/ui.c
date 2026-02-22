@@ -702,22 +702,46 @@ static void render_character(GameState *gs) {
     }
     row++;
 
+    int eqBonus[NUM_STATS] = {0};
+    for (int s = 0; s < NUM_SLOTS; s++)
+        if (h->hasEquip[s])
+            for (int j = 0; j < NUM_STATS; j++)
+                eqBonus[j] += h->equipment[s].stats[j];
+
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, row, 9, "%3s", "Tot");
+    mvwprintw(w, row, 13, "%4s", "Tal");
+    mvwprintw(w, row, 18, "%5s", "Equip");
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    row++;
+
     for (int i = 0; i < NUM_STATS; i++) {
+        int tal = h->talents[i], eq = eqBonus[i];
+        char tBuf[8] = "", eBuf[8] = "";
+        if (tal > 0) snprintf(tBuf, sizeof(tBuf), "%d", tal);
+        if (eq > 0)  snprintf(eBuf, sizeof(eBuf), "%d", eq);
+
         if (i == gs->menuIdx) {
+            char line[LEFT_W];
+            snprintf(line, sizeof(line), " > %-4s %3d %4s %5s",
+                     data_stat_short(i), es.stats[i], tBuf, eBuf);
             wattron(w, COLOR_PAIR(CP_SELECTED));
-            mvwprintw(w, row, 1, " > %-4s %3d", data_stat_short(i), es.stats[i]);
-            if (h->talents[i] > 0) wprintw(w, " (+%d)", h->talents[i]);
-            wprintw(w, "%*s", LEFT_W - 20, "");
+            mvwprintw(w, row, 1, "%-*.*s", LEFT_W - 2, LEFT_W - 2, line);
             wattroff(w, COLOR_PAIR(CP_SELECTED));
         } else {
             wattron(w, COLOR_PAIR(CP_DEFAULT));
             mvwprintw(w, row, 1, "   %-4s %3d", data_stat_short(i), es.stats[i]);
-            if (h->talents[i] > 0) {
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+            if (tal > 0) {
                 wattron(w, COLOR_PAIR(CP_GREEN));
-                wprintw(w, " (+%d)", h->talents[i]);
+                mvwprintw(w, row, 13, "%4s", tBuf);
                 wattroff(w, COLOR_PAIR(CP_GREEN));
             }
-            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+            if (eq > 0) {
+                wattron(w, COLOR_PAIR(CP_CYAN));
+                mvwprintw(w, row, 18, "%5s", eBuf);
+                wattroff(w, COLOR_PAIR(CP_CYAN));
+            }
         }
         row++;
     }
