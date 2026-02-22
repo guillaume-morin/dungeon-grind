@@ -101,18 +101,15 @@ make
 
 That's it. The game runs in your terminal. Make sure your terminal window is at least 80 columns × 24 rows (the default size on most systems).
 
-### 4. Update to the Latest Version
+### 4. Update and Play
 
-Whenever you want to get new updates:
+From now on, just run this single command from inside the `dungeon-grind` folder:
 
 ```bash
-cd dungeon-grind
-git pull
-make clean && make
-./dungeon-grind
+./play.sh
 ```
 
-Your save files are stored separately in `~/.dungeon-grind/` and won't be affected by updates.
+It pulls the latest code, rebuilds, and launches the game. Your save files live in `~/.dungeon-grind/` and are never affected by updates.
 
 ---
 
