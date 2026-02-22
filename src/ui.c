@@ -2042,7 +2042,7 @@ static void render_bulk_sell(GameState *gs) {
         else if (count > 0) wattron(w, COLOR_PAIR(CP_WHITE));
         else wattron(w, COLOR_PAIR(CP_DEFAULT));
 
-        mvwprintw(w, row, 1, "%s%-24.24s", sel ? " > " : "   ", labels[i]);
+        mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", labels[i]);
         wattroff(w, COLOR_PAIR(CP_SELECTED));
         wattroff(w, COLOR_PAIR(CP_WHITE));
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
