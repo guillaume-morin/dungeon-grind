@@ -360,12 +360,22 @@ static void render_dungeon_select(GameState *gs) {
         wattron(w, COLOR_PAIR(CP_GREEN));
         mvwprintw(w, 2, 2, "[In dungeon]");
         wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-
-    if (gs->wantHardMode) {
-        wattron(w, COLOR_PAIR(CP_MAGENTA));
-        mvwprintw(w, 2, 16, "[HARD]");
-        wattroff(w, COLOR_PAIR(CP_MAGENTA));
+        if (gs->hardModeActive) {
+            wattron(w, COLOR_PAIR(CP_MAGENTA));
+            mvwprintw(w, 2, 16, "[HARD]");
+            wattroff(w, COLOR_PAIR(CP_MAGENTA));
+        }
+    } else if (gs->wantHardMode) {
+        int sel = gs->menuIdx;
+        if (sel >= 0 && sel < NUM_DUNGEONS && gs->hero.hardMode[sel]) {
+            wattron(w, COLOR_PAIR(CP_MAGENTA));
+            mvwprintw(w, 2, 2, "Hard mode ON");
+            wattroff(w, COLOR_PAIR(CP_MAGENTA));
+        } else {
+            wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, 2, 2, "Hard mode ON (N/A)");
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        }
     }
 
     int row = 4;
@@ -411,7 +421,8 @@ static void render_dungeon_select(GameState *gs) {
     }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 3, 2, "[H] Hard Mode");
+    mvwprintw(w, PANEL_H - 3, 2, "[H] Hard %s",
+              gs->wantHardMode ? "ON" : "OFF");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
