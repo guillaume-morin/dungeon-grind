@@ -538,12 +538,17 @@ enemy_killed:
         h->gold += gold;
         h->totalGoldEarned += gold;
 
-        int xp = (int)(e->xpReward * es.xpMultiplier);
+        int xp = (int)(e->xpReward * es.xpMultiplier * 1.15f);
         if (gs->hardModeActive) xp = xp * 150 / 100;
 
         if (gs->bossActive) {
             h->bossKills[gs->currentDungeon]++;
-            if (gs->hardModeActive) h->hardModeClears++;
+            if (gs->hardModeActive) {
+                h->hardModeClears++;
+                gs->activeAffixes[0] = rand() % NUM_AFFIXES;
+                do { gs->activeAffixes[1] = rand() % NUM_AFFIXES; }
+                while (gs->activeAffixes[1] == gs->activeAffixes[0]);
+            }
             if (!h->hardMode[gs->currentDungeon])
                 h->hardMode[gs->currentDungeon] = 1;
             snprintf(buf, sizeof(buf), "*** %s SLAIN! *** +%dXP +%dG",
@@ -560,6 +565,12 @@ enemy_killed:
             gs->hasEnemy = 0;
             gs->bossTimer = BOSS_DELAY;
             ui_log(gs, "The dungeon falls silent...", CP_MAGENTA);
+            if (gs->hardModeActive) {
+                snprintf(buf, sizeof(buf), "New affixes: %s + %s",
+                         data_affix_name(gs->activeAffixes[0]),
+                         data_affix_name(gs->activeAffixes[1]));
+                ui_log(gs, buf, CP_MAGENTA);
+            }
         } else {
             gs->dungeonKills++;
             snprintf(buf, sizeof(buf), "Slew %s! +%dXP +%dG",

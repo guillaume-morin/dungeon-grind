@@ -82,7 +82,7 @@ enum Screen {
     SCR_ENCYCLOPEDIA, SCR_ENCY_CLASSES, SCR_ENCY_STATS,
     SCR_ENCY_ITEMS, SCR_ENCY_ENEMIES, SCR_ENCY_BOSSES,
     SCR_ENCY_SKILLS, SCR_ENCY_DUNGEONS, SCR_ENCY_COMBAT,
-    SCR_ACHIEVEMENTS, SCR_TITLES, SCR_BULK_SELL
+    SCR_ACHIEVEMENTS, SCR_TITLES, SCR_BULK_SELL, SCR_ENCY_AFFIXES
 };
 
 /* ── color pairs (CP_*) ───────────────────────────────────────────── */
@@ -103,6 +103,8 @@ enum Screen {
 #define CP_SEL_BLUE    14
 #define CP_SEL_MAGENTA 15
 #define CP_SEL_YELLOW  16
+#define CP_SEL_CYAN    17
+#define CP_SEL_RED     18
 
 /* ── data definitions (read-only templates) ────────────────────────── */
 

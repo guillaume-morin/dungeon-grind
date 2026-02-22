@@ -70,6 +70,8 @@ void ui_init(GameState *gs) {
     init_pair(CP_SEL_BLUE,    COLOR_BLACK, COLOR_BLUE);
     init_pair(CP_SEL_MAGENTA, COLOR_BLACK, COLOR_MAGENTA);
     init_pair(CP_SEL_YELLOW,  COLOR_BLACK, COLOR_YELLOW);
+    init_pair(CP_SEL_CYAN,    COLOR_BLACK, COLOR_CYAN);
+    init_pair(CP_SEL_RED,     COLOR_BLACK, COLOR_RED);
 
     gs->wHeader = newwin(HEADER_H, SCREEN_W, 0, 0);
     gs->wLeft   = newwin(PANEL_H, LEFT_W, HEADER_H, 0);
@@ -350,6 +352,22 @@ static void render_main_menu(GameState *gs) {
     wnoutrefresh(w);
 }
 
+static int sel_color(int cp) {
+    switch (cp) {
+    case CP_GREEN:   return CP_SEL_GREEN;
+    case CP_BLUE:    return CP_SEL_BLUE;
+    case CP_MAGENTA: return CP_SEL_MAGENTA;
+    case CP_YELLOW:  return CP_SEL_YELLOW;
+    case CP_CYAN:    return CP_SEL_CYAN;
+    case CP_RED:     return CP_SEL_RED;
+    default:         return CP_SELECTED;
+    }
+}
+
+static int rarity_sel_color(int rarity) {
+    return sel_color(data_rarity_color(rarity));
+}
+
 static void render_dungeon_select(GameState *gs) {
     WINDOW *w = gs->wLeft;
     werase(w);
@@ -380,17 +398,18 @@ static void render_dungeon_select(GameState *gs) {
         int hm = gs->hero.hardMode[i];
 
         if (i == gs->menuIdx) {
-            wattron(w, COLOR_PAIR(CP_SELECTED));
-            mvwprintw(w, row, 1, " > %-23.23s", dg->name);
-            wattroff(w, COLOR_PAIR(CP_SELECTED));
+            int sc = unlocked ? sel_color(dg->colorPair) : CP_SELECTED;
+            wattron(w, COLOR_PAIR(sc));
+            mvwprintw(w, row, 1, " %c %-23.23s", cur ? '*' : '>', dg->name);
+            wattroff(w, COLOR_PAIR(sc));
         } else if (!unlocked) {
             wattron(w, COLOR_PAIR(CP_RED));
             mvwprintw(w, row, 1, "   Lv.%d ???", dg->levelReq);
             wattroff(w, COLOR_PAIR(CP_RED));
         } else {
-            wattron(w, COLOR_PAIR(cur ? CP_GREEN : CP_DEFAULT));
-            mvwprintw(w, row, 1, "   %-23.23s", dg->name);
-            wattroff(w, COLOR_PAIR(cur ? CP_GREEN : CP_DEFAULT));
+            wattron(w, COLOR_PAIR(dg->colorPair));
+            mvwprintw(w, row, 1, " %c %-23.23s", cur ? '*' : ' ', dg->name);
+            wattroff(w, COLOR_PAIR(dg->colorPair));
         }
         if (hm >= 2 && unlocked) {
             wattron(w, COLOR_PAIR(CP_MAGENTA) | A_BOLD);
@@ -466,16 +485,6 @@ static int inv_build_view(const Hero *h, int filter, int sort, int *out, int max
     s_sortMode = sort;
     if (n > 1) qsort(out, n, sizeof(int), inv_cmp);
     return n;
-}
-
-static int rarity_sel_color(int rarity) {
-    switch (data_rarity_color(rarity)) {
-    case CP_GREEN:   return CP_SEL_GREEN;
-    case CP_BLUE:    return CP_SEL_BLUE;
-    case CP_MAGENTA: return CP_SEL_MAGENTA;
-    case CP_YELLOW:  return CP_SEL_YELLOW;
-    default:         return CP_SELECTED;
-    }
 }
 
 static void render_equipment(GameState *gs) {
@@ -1032,13 +1041,13 @@ static void render_ency_items(GameState *gs) {
         int sel = (i == gs->menuIdx);
         int rc = data_rarity_color(it->rarity);
 
-        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        int sc = rarity_sel_color(it->rarity);
+        if (sel) wattron(w, COLOR_PAIR(sc));
         else     wattron(w, COLOR_PAIR(rc));
 
         mvwprintw(w, row, 1, "%s%-21.21s", sel ? " > " : "   ", it->name);
 
-        if (sel) wattroff(w, COLOR_PAIR(CP_SELECTED));
-        else     wattroff(w, COLOR_PAIR(rc));
+        wattroff(w, COLOR_PAIR(sel ? sc : rc));
         row++;
     }
 
@@ -1146,13 +1155,12 @@ static void render_ency_bosses(GameState *gs) {
         const EnemyTemplate *et = data_enemy(bosses[i]);
         int sel = (i == gs->menuIdx);
 
-        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        if (sel) wattron(w, COLOR_PAIR(CP_SEL_MAGENTA));
         else     wattron(w, COLOR_PAIR(CP_MAGENTA));
 
         mvwprintw(w, 3 + i, 1, "%s%-21.21s", sel ? " > " : "   ", et->name);
 
-        if (sel) wattroff(w, COLOR_PAIR(CP_SELECTED));
-        else     wattroff(w, COLOR_PAIR(CP_MAGENTA));
+        wattroff(w, COLOR_PAIR(sel ? CP_SEL_MAGENTA : CP_MAGENTA));
     }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
@@ -1296,14 +1304,14 @@ static void render_ency_dungeons(GameState *gs) {
         const DungeonDef *dg = data_dungeon(i);
         int sel = (i == gs->menuIdx);
 
-        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        int sc = sel_color(dg->colorPair);
+        if (sel) wattron(w, COLOR_PAIR(sc));
         else     wattron(w, COLOR_PAIR(dg->colorPair));
 
         mvwprintw(w, 3 + i, 1, "%sLv%-2d %-18.18s",
                   sel ? " > " : "   ", dg->levelReq, dg->name);
 
-        if (sel) wattroff(w, COLOR_PAIR(CP_SELECTED));
-        else     wattroff(w, COLOR_PAIR(dg->colorPair));
+        wattroff(w, COLOR_PAIR(sel ? sc : dg->colorPair));
     }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
@@ -1517,15 +1525,102 @@ static void render_ency_combat_detail(GameState *gs) {
         break;
     case 14: /* Hard Mode */
         mvwprintw(w, row++, 2, "[H] in dungeon select. Beat boss first.");
-        mvwprintw(w, row++, 2, "2 random affixes: Fort/Rage/Curse/");
-        mvwprintw(w, row++, 2, "Thorn/Frenzy/Drain. +50%% gold & XP.");
+        mvwprintw(w, row++, 2, "2 random affixes. +50%% gold & XP.");
         mvwprintw(w, row++, 2, "'H' on unlocked dungeons = available.");
+        wattron(w, COLOR_PAIR(CP_CYAN));
+        mvwprintw(w, row++, 2, "[Enter] View affix details");
+        wattroff(w, COLOR_PAIR(CP_CYAN));
+        wattron(w, COLOR_PAIR(CP_WHITE));
         break;
     case 15: /* Offline Progress */
         mvwprintw(w, row++, 2, "Quit while in a dungeon to earn");
         mvwprintw(w, row++, 2, "XP & gold while offline (~half rate).");
         mvwprintw(w, row++, 2, "Rewards based on dungeon enemies.");
         mvwprintw(w, row++, 2, "Capped at 8 hours of offline time.");
+        break;
+    }
+    wattroff(w, COLOR_PAIR(CP_WHITE));
+
+    wnoutrefresh(w);
+}
+
+static void render_ency_affixes(GameState *gs) {
+    WINDOW *w = gs->wLeft;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+    mvwprintw(w, 1, 2, "Hard Mode Affixes");
+    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+    for (int i = 0; i < NUM_AFFIXES; i++) {
+        if (i == gs->menuIdx) {
+            wattron(w, COLOR_PAIR(CP_SEL_MAGENTA));
+            mvwprintw(w, 3 + i, 1, " > %-23s", data_affix_name(i));
+            wattroff(w, COLOR_PAIR(CP_SEL_MAGENTA));
+        } else {
+            wattron(w, COLOR_PAIR(CP_MAGENTA));
+            mvwprintw(w, 3 + i, 1, "   %-23s", data_affix_name(i));
+            wattroff(w, COLOR_PAIR(CP_MAGENTA));
+        }
+    }
+
+    wattron(w, COLOR_PAIR(CP_CYAN));
+    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
+    wattroff(w, COLOR_PAIR(CP_CYAN));
+    wnoutrefresh(w);
+}
+
+static void render_ency_affixes_detail(GameState *gs) {
+    WINDOW *w = gs->wEnemy;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    if (gs->menuIdx < 0 || gs->menuIdx >= NUM_AFFIXES) {
+        wnoutrefresh(w);
+        return;
+    }
+
+    wattron(w, COLOR_PAIR(CP_MAGENTA) | A_BOLD);
+    mvwprintw(w, 1, 2, "%s", data_affix_name(gs->menuIdx));
+    wattroff(w, COLOR_PAIR(CP_MAGENTA) | A_BOLD);
+
+    wattron(w, COLOR_PAIR(CP_WHITE));
+    int row = 3;
+    switch (gs->menuIdx) {
+    case 0: /* Fortified */
+        mvwprintw(w, row++, 2, "Enemies gain +30%% max HP.");
+        mvwprintw(w, row++, 2, "Makes fights longer and more");
+        mvwprintw(w, row++, 2, "resource-intensive.");
+        break;
+    case 1: /* Raging */
+        mvwprintw(w, row++, 2, "Enemies deal +20%% damage.");
+        mvwprintw(w, row++, 2, "Increases pressure on healing");
+        mvwprintw(w, row++, 2, "and defensive cooldowns.");
+        break;
+    case 2: /* Cursed */
+        mvwprintw(w, row++, 2, "All healing and regen reduced");
+        mvwprintw(w, row++, 2, "by 20%%. Affects HP regen,");
+        mvwprintw(w, row++, 2, "HoT, and resource regen.");
+        break;
+    case 3: /* Thorny */
+        mvwprintw(w, row++, 2, "Enemies reflect 10%% of the");
+        mvwprintw(w, row++, 2, "damage they deal back to");
+        mvwprintw(w, row++, 2, "themselves as thorn damage.");
+        break;
+    case 4: /* Frenzied */
+        mvwprintw(w, row++, 2, "Enemies are immune to stun.");
+        mvwprintw(w, row++, 2, "Stun effects still apply but");
+        mvwprintw(w, row++, 2, "enemies will not skip turns.");
+        break;
+    case 5: /* Draining */
+        mvwprintw(w, row++, 2, "Hero loses 1%% max HP each");
+        mvwprintw(w, row++, 2, "combat tick. Constant pressure");
+        mvwprintw(w, row++, 2, "that bypasses all defenses.");
         break;
     }
     wattroff(w, COLOR_PAIR(CP_WHITE));
@@ -1837,11 +1932,21 @@ static void render_skills(GameState *gs) {
     mvwprintw(w, 1, 2, "Skills");
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
-    for (int t = 0; t < MAX_SKILL_TIERS; t++) {
+    int helpRows = 3;
+    int maxRows = PANEL_H - 2 - helpRows - 1;
+    int selTier = gs->menuIdx / 2;
+    int scrollTier = 0;
+    int visibleTiers = maxRows / 3;
+    if (selTier >= scrollTier + visibleTiers)
+        scrollTier = selTier - visibleTiers + 1;
+    if (scrollTier < 0) scrollTier = 0;
+
+    for (int t = scrollTier; t < MAX_SKILL_TIERS; t++) {
         int reqLvl = data_skill_level(t);
         int isLocked = gs->hero.level < reqLvl;
         int chosen = gs->hero.skillChoices[t];
-        int hdrRow = 2 + t * 3;
+        int hdrRow = 3 + (t - scrollTier) * 3;
+        if (hdrRow + 2 > 1 + maxRows) break;
 
         wattron(w, COLOR_PAIR(isLocked ? CP_RED : CP_YELLOW));
         mvwprintw(w, hdrRow, 2, "Lv%d:", reqLvl);
@@ -1889,13 +1994,13 @@ static void render_skills(GameState *gs) {
         if (gs->hero.skillChoices[t] >= 0) { hasAny = 1; break; }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 3, 2, "[Enter] Choose");
+    mvwprintw(w, PANEL_H - 4, 2, "[Enter] Choose");
     if (hasAny) {
         int resetCost = gs->hero.level * gs->hero.level * 2;
         int canReset = gs->hero.gold >= resetCost;
         wattroff(w, COLOR_PAIR(CP_CYAN));
         wattron(w, COLOR_PAIR(canReset ? CP_CYAN : CP_RED));
-        mvwprintw(w, PANEL_H - 3, 17, "[R] Reset %dG", resetCost);
+        mvwprintw(w, PANEL_H - 3, 2, "[R] Reset %dg", resetCost);
         wattroff(w, COLOR_PAIR(canReset ? CP_CYAN : CP_RED));
         wattron(w, COLOR_PAIR(CP_CYAN));
     }
@@ -2220,6 +2325,10 @@ static void render_enemy_panel(GameState *gs) {
         render_ency_combat_detail(gs);
         return;
     }
+    if (gs->screen == SCR_ENCY_AFFIXES) {
+        render_ency_affixes_detail(gs);
+        return;
+    }
 
     WINDOW *w = gs->wEnemy;
     werase(w);
@@ -2276,6 +2385,18 @@ static void render_enemy_panel(GameState *gs) {
     wattron(w, COLOR_PAIR(CP_WHITE));
     mvwprintw(w, 6, hpCol, "%s", hpBuf);
     wattroff(w, COLOR_PAIR(CP_WHITE));
+
+    if (gs->hardModeActive) {
+        char aff[48];
+        int affLen = snprintf(aff, sizeof(aff), "%s + %s",
+                  data_affix_name(gs->activeAffixes[0]),
+                  data_affix_name(gs->activeAffixes[1]));
+        int affCol = RIGHT_W - 2 - affLen;
+        if (affCol < 2) affCol = 2;
+        wattron(w, COLOR_PAIR(CP_MAGENTA));
+        mvwprintw(w, 5, affCol, "%s", aff);
+        wattroff(w, COLOR_PAIR(CP_MAGENTA));
+    }
 
     if (gs->combatTicks > 0) {
         EStats ces = hero_effective_stats(&gs->hero);
@@ -2341,6 +2462,7 @@ void ui_render(GameState *gs) {
     case SCR_ENCY_SKILLS:   render_ency_skills(gs);   break;
     case SCR_ENCY_DUNGEONS: render_ency_dungeons(gs); break;
     case SCR_ENCY_COMBAT:   render_ency_combat(gs);   break;
+    case SCR_ENCY_AFFIXES:  render_ency_affixes(gs);  break;
     case SCR_ACHIEVEMENTS:  render_achievements(gs);   break;
     case SCR_TITLES:        render_titles(gs);         break;
     case SCR_BULK_SELL:     render_bulk_sell(gs);      break;
@@ -2806,9 +2928,17 @@ void ui_handle_key(GameState *gs, int ch) {
     int nTopics = 16;
     if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
     if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
+        if ((ch == '\n' || ch == KEY_ENTER) && gs->menuIdx == 14)
+            { gs->screen = SCR_ENCY_AFFIXES; gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 7; }
         break;
     }
+
+    case SCR_ENCY_AFFIXES:
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_AFFIXES - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_AFFIXES) gs->menuIdx = 0; }
+        if (ch == 27) { gs->screen = SCR_ENCY_COMBAT; gs->menuIdx = 14; }
+        break;
 
     case SCR_ACHIEVEMENTS:
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_ACHIEVEMENTS - 1; }
