@@ -265,6 +265,7 @@ typedef struct {
     int  bossKills[NUM_DUNGEONS];
     int  eliteKills;
     int  hardModeClears;
+    int64_t lastSaveTime;
 } Hero;
 
 typedef struct {
@@ -376,7 +377,7 @@ void    ui_log(GameState *gs, const char *text, int color);
 /* ── save.c ───────────────────────────────────────────────────────── */
 
 /* Write hero + dungeon state to binary save file. Returns 1 on success. */
-int     save_game(const GameState *gs);
+int     save_game(GameState *gs);
 /* Load save file into gs; resets combat state and respawns if in dungeon. */
 int     load_game(GameState *gs);
 /* Scan all save files and populate gs->slotInfo[] for the save-select screen. */

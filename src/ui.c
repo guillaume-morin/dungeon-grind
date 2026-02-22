@@ -1364,9 +1364,9 @@ static void render_ency_combat(GameState *gs) {
         "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
         "Buffs & Effects", "Shields & Ward", "Stun & Slow",
         "Death & Revive", "Boss Encounters", "Loot System",
-        "Resource & Regen", "Hard Mode"
+        "Resource & Regen", "Hard Mode", "Offline Progress"
     };
-    int nTopics = 15;
+    int nTopics = 16;
 
     for (int i = 0; i < nTopics; i++) {
         if (i == gs->menuIdx) {
@@ -1398,10 +1398,10 @@ static void render_ency_combat_detail(GameState *gs) {
         "Dodge & Evasion", "Block (Warrior)", "Damage Reduction",
         "Buffs & Effects", "Shields & Ward", "Stun & Slow",
         "Death & Revive", "Boss Encounters", "Loot System",
-        "Resource & Regen", "Hard Mode"
+        "Resource & Regen", "Hard Mode", "Offline Progress"
     };
 
-    if (gs->menuIdx < 0 || gs->menuIdx >= 15) {
+    if (gs->menuIdx < 0 || gs->menuIdx >= 16) {
         wnoutrefresh(w);
         return;
     }
@@ -1502,6 +1502,12 @@ static void render_ency_combat_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "2 random affixes: Fort/Rage/Curse/");
         mvwprintw(w, row++, 2, "Thorn/Frenzy/Drain. +50%% gold & XP.");
         mvwprintw(w, row++, 2, "'H' on unlocked dungeons = available.");
+        break;
+    case 15: /* Offline Progress */
+        mvwprintw(w, row++, 2, "Quit while in a dungeon to earn");
+        mvwprintw(w, row++, 2, "XP & gold while offline (~half rate).");
+        mvwprintw(w, row++, 2, "Rewards based on dungeon enemies.");
+        mvwprintw(w, row++, 2, "Capped at 8 hours of offline time.");
         break;
     }
     wattroff(w, COLOR_PAIR(CP_WHITE));
@@ -2748,7 +2754,7 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_ENCY_COMBAT: {
-    int nTopics = 15;
+    int nTopics = 16;
     if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = nTopics - 1; }
     if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= nTopics) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_ENCYCLOPEDIA; gs->menuIdx = 7; }
