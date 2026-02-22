@@ -315,7 +315,6 @@ typedef struct {
     int     combatHealed;
     int     combatTicks;
     int     hardModeActive;
-    int     wantHardMode;
     int     activeAffixes[2];
 
     char    nameBuf[MAX_NAME];

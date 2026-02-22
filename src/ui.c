@@ -365,17 +365,6 @@ static void render_dungeon_select(GameState *gs) {
             mvwprintw(w, 2, 16, "[HARD]");
             wattroff(w, COLOR_PAIR(CP_MAGENTA));
         }
-    } else if (gs->wantHardMode) {
-        int sel = gs->menuIdx;
-        if (sel >= 0 && sel < NUM_DUNGEONS && gs->hero.hardMode[sel]) {
-            wattron(w, COLOR_PAIR(CP_MAGENTA));
-            mvwprintw(w, 2, 2, "Hard mode ON");
-            wattroff(w, COLOR_PAIR(CP_MAGENTA));
-        } else {
-            wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, 2, 2, "Hard mode ON (N/A)");
-            wattroff(w, COLOR_PAIR(CP_DEFAULT));
-        }
     }
 
     int row = 4;
@@ -398,10 +387,14 @@ static void render_dungeon_select(GameState *gs) {
             mvwprintw(w, row, 1, "   %-23.23s", dg->name);
             wattroff(w, COLOR_PAIR(cur ? CP_GREEN : CP_DEFAULT));
         }
-        if (hm && unlocked) {
-            wattron(w, COLOR_PAIR(CP_MAGENTA));
+        if (hm >= 2 && unlocked) {
+            wattron(w, COLOR_PAIR(CP_MAGENTA) | A_BOLD);
             mvwprintw(w, row, LEFT_W - 4, "H");
-            wattroff(w, COLOR_PAIR(CP_MAGENTA));
+            wattroff(w, COLOR_PAIR(CP_MAGENTA) | A_BOLD);
+        } else if (hm >= 1 && unlocked) {
+            wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, row, LEFT_W - 4, "H");
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
         row++;
     }
@@ -421,8 +414,7 @@ static void render_dungeon_select(GameState *gs) {
     }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 3, 2, "[H] Hard %s",
-              gs->wantHardMode ? "ON" : "OFF");
+    mvwprintw(w, PANEL_H - 3, 2, "[H] Toggle Hard Mode");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
@@ -2412,7 +2404,8 @@ void ui_handle_key(GameState *gs, int ch) {
         if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > maxIdx) gs->menuIdx = 0; }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 0; }
         if (ch == 'h' || ch == 'H') {
-            gs->wantHardMode = !gs->wantHardMode;
+            if (gs->menuIdx >= 0 && gs->menuIdx < NUM_DUNGEONS && gs->hero.hardMode[gs->menuIdx] >= 1)
+                gs->hero.hardMode[gs->menuIdx] = gs->hero.hardMode[gs->menuIdx] == 2 ? 1 : 2;
         }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->inDungeon && gs->menuIdx == NUM_DUNGEONS) {
@@ -2444,7 +2437,7 @@ void ui_handle_key(GameState *gs, int ch) {
                     gs->combatDmgTaken = 0;
                     gs->combatHealed = 0;
                     gs->combatTicks = 0;
-                    gs->hardModeActive = (gs->wantHardMode && gs->hero.hardMode[gs->menuIdx]);
+                    gs->hardModeActive = (gs->hero.hardMode[gs->menuIdx] == 2);
                     if (gs->hardModeActive) {
                         gs->activeAffixes[0] = rand() % NUM_AFFIXES;
                         do { gs->activeAffixes[1] = rand() % NUM_AFFIXES; }
