@@ -741,6 +741,11 @@ static void render_confirm_quit(GameState *gs) {
 }
 
 /* Collect all non-boss enemy indices across all dungeons, ordered by dungeon. */
+static int cmp_enemy_name(const void *a, const void *b) {
+    return strcmp(data_enemy(*(const int *)a)->name,
+                  data_enemy(*(const int *)b)->name);
+}
+
 static int ency_normal_enemies(int *out, int max) {
     int n = 0;
     for (int d = 0; d < NUM_DUNGEONS && n < max; d++) {
@@ -748,6 +753,7 @@ static int ency_normal_enemies(int *out, int max) {
         for (int e = 0; e < dg->numEnemies && n < max; e++)
             out[n++] = dg->enemyIdx[e];
     }
+    qsort(out, (size_t)n, sizeof(int), cmp_enemy_name);
     return n;
 }
 
