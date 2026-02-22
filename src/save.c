@@ -131,14 +131,9 @@ int load_game(GameState *gs) {
                     gs->hero.gold += totalGold;
                     gs->hero.totalGoldEarned += totalGold;
                     hero_add_xp(gs, totalXp);
-                    char buf[LOG_LINE_W + 1];
-                    if (minutes >= 60)
-                        snprintf(buf, sizeof(buf), "Offline %dh%dm: +%dXP +%dG",
-                                 minutes / 60, minutes % 60, totalXp, totalGold);
-                    else
-                        snprintf(buf, sizeof(buf), "Offline %dm: +%dXP +%dG",
-                                 minutes, totalXp, totalGold);
-                    ui_log(gs, buf, CP_CYAN);
+                    gs->offlineXp   = totalXp;
+                    gs->offlineGold = totalGold;
+                    gs->offlineMin  = minutes;
                 }
             }
         }

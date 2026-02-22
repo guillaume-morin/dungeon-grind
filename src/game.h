@@ -318,6 +318,10 @@ typedef struct {
     int     hardModeActive;
     int     activeAffixes[2];
 
+    int     offlineXp;
+    int     offlineGold;
+    int     offlineMin;
+
     char    nameBuf[MAX_NAME];
     int     nameLen;
 
