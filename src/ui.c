@@ -554,7 +554,7 @@ static void render_equipment(GameState *gs) {
     else if (!inSlots && bagSel >= 0 && bagSel < viewN)
         mvwprintw(w, PANEL_H - 4, 2, "[Enter] Equip");
     mvwprintw(w, PANEL_H - 3, 2, "[X]Sell [Z]Bulk [S]ort");
-    mvwprintw(w, PANEL_H - 2, 2, "[</>]Filter  [Esc]Back");
+    mvwprintw(w, PANEL_H - 2, 2, "[L/R]Filter [Esc]Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
 }
