@@ -1905,6 +1905,8 @@ static void bulk_sell_preview(const Hero *h, int threshold, int *outCount, int *
     *outGold = gold;
 }
 
+#define BULK_MENU_N 6
+
 static void render_bulk_sell(GameState *gs) {
     WINDOW *w = gs->wLeft;
     werase(w);
@@ -1920,75 +1922,87 @@ static void render_bulk_sell(GameState *gs) {
     mvwprintw(w, 2, 2, "Bag: %d/%d items", gs->hero.invCount, MAX_INVENTORY);
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
-    const char *labels[] = {
-        "Sell below Uncommon",
-        "Sell below Rare",
-        "Sell below Epic",
-        "Sell below Legendary",
-    };
-
-    int row = 4;
-    for (int i = 0; i < 4; i++) {
-        int count, gold;
-        bulk_sell_preview(&gs->hero, i + 1, &count, &gold);
-        int sel = (i == gs->menuIdx);
-
-        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
-        else if (count > 0) wattron(w, COLOR_PAIR(CP_WHITE));
-        else wattron(w, COLOR_PAIR(CP_DEFAULT));
-
-        mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", labels[i]);
-        wattroff(w, COLOR_PAIR(CP_SELECTED));
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattroff(w, COLOR_PAIR(CP_DEFAULT));
-
-        if (count > 0) {
-            wattron(w, COLOR_PAIR(CP_YELLOW));
-            mvwprintw(w, row + 1, 4, "%d item%s for %dg",
-                      count, count > 1 ? "s" : "", gold);
-            wattroff(w, COLOR_PAIR(CP_YELLOW));
-        } else {
-            wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row + 1, 4, "(nothing to sell)");
-            wattroff(w, COLOR_PAIR(CP_DEFAULT));
-        }
-        row += 3;
-    }
-
     int raw = gs->hero.autoSellThreshold;
     int asOn = raw > 0;
     int asTh = raw > 0 ? raw : (raw < 0 ? -raw : 1);
     if (asTh < 1) asTh = 1;
     if (asTh > 4) asTh = 4;
 
-    int sel4 = (4 == gs->menuIdx);
-    if (sel4) wattron(w, COLOR_PAIR(CP_SELECTED));
-    else if (asOn) wattron(w, COLOR_PAIR(CP_GREEN));
-    else wattron(w, COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, row, 1, "%s%-23.23s", sel4 ? " > " : "   ", "Auto-sell");
-    wattroff(w, COLOR_PAIR(CP_SELECTED));
-    wattroff(w, COLOR_PAIR(CP_GREEN));
-    wattroff(w, COLOR_PAIR(CP_DEFAULT));
-    wattron(w, asOn ? COLOR_PAIR(CP_GREEN) : COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, row + 1, 4, "%s", asOn ? "ON" : "OFF");
-    wattroff(w, COLOR_PAIR(CP_GREEN));
-    wattroff(w, COLOR_PAIR(CP_DEFAULT));
-    row += 3;
-
+    const char *sellLabels[] = { "Sell below Uncommon", "Sell below Rare",
+                                  "Sell below Epic", "Sell below Legendary" };
     const char *thLabels[] = { "< Uncommon", "< Rare", "< Epic", "< Legendary" };
-    int sel5 = (5 == gs->menuIdx);
-    if (sel5) wattron(w, COLOR_PAIR(CP_SELECTED));
-    else wattron(w, COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, row, 1, "%s%-23.23s", sel5 ? " > " : "   ", "Sell threshold");
-    wattroff(w, COLOR_PAIR(CP_SELECTED));
-    wattroff(w, COLOR_PAIR(CP_DEFAULT));
-    wattron(w, COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, row + 1, 4, "%s", thLabels[asTh - 1]);
-    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+    int firstRow = 4;
+    int lastRow = PANEL_H - 4;
+    int maxVis = (lastRow - firstRow + 1) / 3;
+    if (maxVis < 1) maxVis = 1;
+
+    int scroll = 0;
+    if (gs->menuIdx >= scroll + maxVis) scroll = gs->menuIdx - maxVis + 1;
+    if (gs->menuIdx < scroll) scroll = gs->menuIdx;
+
+    int row = firstRow;
+    for (int i = scroll; i < BULK_MENU_N && row + 1 <= lastRow; i++) {
+        int sel = (i == gs->menuIdx);
+
+        if (i < 4) {
+            int count, gold;
+            bulk_sell_preview(&gs->hero, i + 1, &count, &gold);
+            if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+            else if (count > 0) wattron(w, COLOR_PAIR(CP_WHITE));
+            else wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", sellLabels[i]);
+            wattroff(w, COLOR_PAIR(CP_SELECTED));
+            wattroff(w, COLOR_PAIR(CP_WHITE));
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+            if (count > 0) {
+                wattron(w, COLOR_PAIR(CP_YELLOW));
+                mvwprintw(w, row + 1, 4, "%d item%s for %dg",
+                          count, count > 1 ? "s" : "", gold);
+                wattroff(w, COLOR_PAIR(CP_YELLOW));
+            } else {
+                wattron(w, COLOR_PAIR(CP_DEFAULT));
+                mvwprintw(w, row + 1, 4, "(nothing to sell)");
+                wattroff(w, COLOR_PAIR(CP_DEFAULT));
+            }
+        } else if (i == 4) {
+            if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+            else if (asOn) wattron(w, COLOR_PAIR(CP_GREEN));
+            else wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", "Auto-sell");
+            wattroff(w, COLOR_PAIR(CP_SELECTED));
+            wattroff(w, COLOR_PAIR(CP_GREEN));
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+            wattron(w, asOn ? COLOR_PAIR(CP_GREEN) : COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, row + 1, 4, "%s", asOn ? "ON" : "OFF");
+            wattroff(w, COLOR_PAIR(CP_GREEN));
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        } else {
+            if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+            else wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", "Sell threshold");
+            wattroff(w, COLOR_PAIR(CP_SELECTED));
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+            wattron(w, COLOR_PAIR(CP_DEFAULT));
+            mvwprintw(w, row + 1, 4, "%s", thLabels[asTh - 1]);
+            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        }
+        row += 3;
+    }
+
+    if (scroll > 0) {
+        wattron(w, COLOR_PAIR(CP_DEFAULT));
+        mvwprintw(w, firstRow - 1, LEFT_W - 4, " ^ ");
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    }
+    if (scroll + maxVis < BULK_MENU_N) {
+        wattron(w, COLOR_PAIR(CP_DEFAULT));
+        mvwprintw(w, lastRow + 1, LEFT_W - 4, " v ");
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 3, 2, "[Enter] Sell / Toggle");
-    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Cancel");
+    mvwprintw(w, PANEL_H - 2, 2, "[Enter] Apply  [Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
 }
@@ -3064,8 +3078,8 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_BULK_SELL: {
-        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 5; }
-        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > 5) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = BULK_MENU_N - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= BULK_MENU_N) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
             if (gs->menuIdx == 4) {
                 int raw = gs->hero.autoSellThreshold;
