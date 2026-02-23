@@ -2276,7 +2276,24 @@ static void render_enemy_panel(GameState *gs) {
         return;
     }
     if (gs->screen == SCR_CLASS_SELECT) {
-        render_ency_classes_detail(gs);
+        WINDOW *w = gs->wEnemy;
+        werase(w);
+        wattron(w, COLOR_PAIR(CP_BORDER));
+        box(w, 0, 0);
+        wattroff(w, COLOR_PAIR(CP_BORDER));
+        if (gs->menuIdx >= 0 && gs->menuIdx < NUM_CLASSES) {
+            const char **art = data_class_art(gs->menuIdx);
+            if (art) {
+                wattron(w, COLOR_PAIR(CP_WHITE));
+                for (int i = 0; i < ART_LINES; i++) {
+                    int xoff = (RIGHT_W - ART_COLS) / 2 - 2;
+                    if (xoff < 1) xoff = 1;
+                    mvwprintw(w, 1 + i, xoff, "%s", art[i]);
+                }
+                wattroff(w, COLOR_PAIR(CP_WHITE));
+            }
+        }
+        wnoutrefresh(w);
         return;
     }
     if (gs->screen == SCR_ENCYCLOPEDIA) {
@@ -2486,6 +2503,56 @@ static void render_log_panel(GameState *gs) {
                     }
                 }
             }
+        }
+        wnoutrefresh(w);
+        return;
+    }
+
+    if (gs->screen == SCR_CLASS_SELECT) {
+        if (gs->menuIdx >= 0 && gs->menuIdx < NUM_CLASSES) {
+            const ClassDef *cd = data_class(gs->menuIdx);
+
+            wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+            mvwprintw(w, 1, 2, "%s", cd->name);
+            wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+            wattron(w, COLOR_PAIR(CP_WHITE));
+            mvwprintw(w, 2, 2, "%.48s", cd->description);
+            wattroff(w, COLOR_PAIR(CP_WHITE));
+
+            mvwhline(w, 3, 1, ACS_HLINE, RIGHT_W - 2);
+
+            wattron(w, COLOR_PAIR(CP_CYAN));
+            mvwprintw(w, 4, 2, "Primary:");
+            wattroff(w, COLOR_PAIR(CP_CYAN));
+            wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+            mvwprintw(w, 4, 11, "%s", data_stat_name(cd->primaryStat));
+            wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+            int resColor = (gs->menuIdx == CLASS_WARRIOR) ? CP_RED :
+                           (gs->menuIdx == CLASS_ROGUE)   ? CP_YELLOW : CP_BLUE;
+            wattron(w, COLOR_PAIR(resColor));
+            mvwprintw(w, 5, 2, "%s: %d-%d  (+%d/tick)",
+                      cd->resourceName, cd->baseResource, cd->maxResource,
+                      cd->resourceRegen);
+            wattroff(w, COLOR_PAIR(resColor));
+
+            mvwhline(w, 6, 1, ACS_HLINE, RIGHT_W - 2);
+
+            for (int s = 0; s < NUM_STATS; s++) {
+                int row = (s < 4) ? 7 : 8;
+                int col = 2 + (s % 4) * 12;
+                int cp = (s == cd->primaryStat) ? CP_YELLOW : CP_WHITE;
+                wattron(w, COLOR_PAIR(cp));
+                mvwprintw(w, row, col, "%s:%-3d", data_stat_short(s), cd->baseStats[s]);
+                wattroff(w, COLOR_PAIR(cp));
+            }
+
+            mvwhline(w, 9, 1, ACS_HLINE, RIGHT_W - 2);
+
+            wattron(w, COLOR_PAIR(CP_RED));
+            mvwprintw(w, 10, 2, "HP: %d  (+%d per level)", cd->baseHp, cd->hpPerLevel);
+            wattroff(w, COLOR_PAIR(CP_RED));
         }
         wnoutrefresh(w);
         return;
