@@ -3,12 +3,15 @@
  *
  * Key design decisions:
  *
- * MOB_MAX_RARITY[] — per-dungeon cap on normal mob drop rarity. Bosses
- * get +1 tier above the cap. Prevents early dungeons from dropping
- * endgame gear.
+ * Per-dungeon weight tables (MOB_W, ELITE_W, BOSS_W) control drop rarity
+ * distribution. Each dungeon has a [NUM_RARITIES] weight array; roll_rarity()
+ * does a single weighted random pick. Elite weights = next dungeon's normal
+ * weights (so elites always feel one tier ahead). Boss weights are a separate
+ * progression with Legendary restricted to D8 only.
  *
- * Boss loot uses weighted rarity selection (RARITY_WEIGHTS), not uniform
- * random. Common drops are 25× more likely than Legendary.
+ * Epic/Legendary drops pull from the handcrafted static ITEMS[] table,
+ * filtered by level range. If no candidates match, falls back to procedural
+ * Rare. Common through Rare are always procedurally generated.
  *
  * apply_skill() is a generic interpreter for SkillDef — it handles damage,
  * multi-hit, armor ignore, stun, buffs, shields, DoTs, heals, and mana
@@ -21,7 +24,7 @@
  * Absorb shields (shieldHp on Buff) are checked before HP damage in the
  * enemy attack resolution. Multiple shields stack and drain in order.
  *
- * Gold gain is divided by 4 with a floor of 1 to slow economy progression.
+ * Gold gain comes directly from enemy goldReward (baked into templates).
  */
 #include "game.h"
 #include <stdio.h>
@@ -225,12 +228,6 @@ static void consume_buff_flag(Hero *h, int consumeDodge, int consumeDouble) {
     }
 }
 
-/* Per-dungeon rarity cap for normal mob drops. Bosses get +1 tier (see try_boss_loot). */
-static const int MOB_MAX_RARITY[NUM_DUNGEONS] = {
-    RARITY_UNCOMMON, RARITY_UNCOMMON, RARITY_RARE, RARITY_RARE,
-    RARITY_EPIC, RARITY_EPIC, RARITY_EPIC, RARITY_EPIC, RARITY_EPIC
-};
-
 /*
  * Randomized drop level: base levelReq + rand(0..halfway to next dungeon).
  * Gives item-level variety within each dungeon instead of flat levelReq.
@@ -247,17 +244,65 @@ static int drop_level(int dungeon) {
     return base + rand() % (range + 1);
 }
 
-/* Boss loot weight tables — shift toward Epic/Legendary at higher tiers. */
-static const int BOSS_W_EARLY[NUM_RARITIES] = {50, 30, 12, 6, 2};  /* D0-D3 */
-static const int BOSS_W_HIGH[NUM_RARITIES]  = {30, 25, 20, 25, 0};  /* D4-D7: Epic boosted, no Legendary */
-static const int BOSS_W_FINAL[NUM_RARITIES] = {20, 20, 15, 35, 10}; /* D8: Epic 35%, Legendary 10% */
+/*
+ * Per-dungeon rarity weight tables.
+ * Normal mobs use 66/34 progressive transitions across adjacent rarities.
+ * Elites use the next dungeon's normal weights (always one tier ahead).
+ * Bosses have their own curve; Legendary only appears at D8 (50/50 with Epic).
+ */
+static const int MOB_W[NUM_DUNGEONS][NUM_RARITIES] = {
+    {66, 34,  0,  0, 0}, {34, 66,  0,  0, 0},
+    { 0, 66, 34,  0, 0}, { 0, 34, 66,  0, 0},
+    { 0,  0, 66, 34, 0}, { 0,  0, 34, 66, 0},
+    { 0,  0,  0,100, 0}, { 0,  0,  0,100, 0}, { 0,  0,  0,100, 0},
+};
+static const int ELITE_W[NUM_DUNGEONS][NUM_RARITIES] = {
+    {34, 66,  0,  0, 0}, { 0, 66, 34,  0, 0},
+    { 0, 34, 66,  0, 0}, { 0,  0, 66, 34, 0},
+    { 0,  0, 34, 66, 0}, { 0,  0,  0,100, 0},
+    { 0,  0,  0,100, 0}, { 0,  0,  0,100, 0}, { 0,  0,  0,100, 0},
+};
+static const int BOSS_W[NUM_DUNGEONS][NUM_RARITIES] = {
+    { 0, 66, 34,  0, 0}, { 0, 34, 66,  0, 0},
+    { 0,  0,100,  0, 0}, { 0,  0, 66, 34, 0},
+    { 0,  0, 34, 66, 0}, { 0,  0,  0,100, 0},
+    { 0,  0,  0,100, 0}, { 0,  0,  0,100, 0}, { 0,  0,  0, 50, 50},
+};
+
+/* Weighted random pick from a [NUM_RARITIES] weight array. */
+static int roll_rarity(const int weights[NUM_RARITIES]) {
+    int total = 0;
+    for (int r = 0; r < NUM_RARITIES; r++) total += weights[r];
+    if (total == 0) return 0;
+    int roll = rand() % total, accum = 0;
+    for (int r = 0; r < NUM_RARITIES; r++) {
+        if (weights[r] == 0) continue;
+        accum += weights[r];
+        if (roll < accum) return r;
+    }
+    return 0;
+}
 
 /*
- * Boss guaranteed drop with per-tier weighted rarity.
- * Early (D0-3): standard weights. High (D4-7): Epic boosted, no Legendary.
- * Final (D8): Legendary 10%. Only D8 boss can drop Legendary items.
- * Level filter widened to levelReq-10 so D8 can reach Lv78 Epics.
+ * Resolve an Epic/Legendary drop from the static ITEMS[] table.
+ * Filters by rarity, level range [dg->levelReq-10, dg->levelReq+20], and class.
+ * Returns 1 on success (drop written), 0 if no candidates found.
  */
+static int pick_static_item(ItemDef *drop, int rarity, const DungeonDef *dg, int classMask) {
+    int candidates[256], nc = 0;
+    for (int i = 0; i < data_num_items(); i++) {
+        const ItemDef *it = data_item(i);
+        if (it->rarity == rarity &&
+            it->levelReq >= dg->levelReq - 10 && it->levelReq <= dg->levelReq + 20 &&
+            (it->classMask == 0 || (it->classMask & classMask)))
+            candidates[nc++] = i;
+    }
+    if (nc == 0) return 0;
+    *drop = *data_item(candidates[rand() % nc]);
+    return 1;
+}
+
+/* Boss guaranteed drop using BOSS_W per-dungeon weights. */
 static void try_boss_loot(GameState *gs) {
     Hero *h = &gs->hero;
     if (h->invCount >= MAX_INVENTORY) return;
@@ -266,53 +311,18 @@ static void try_boss_loot(GameState *gs) {
 
     int dn = gs->currentDungeon;
     int classMask = (1 << h->classId);
-
-    int bossMaxRar = MOB_MAX_RARITY[dn] + 1;
-    if (bossMaxRar > RARITY_LEGENDARY) bossMaxRar = RARITY_LEGENDARY;
-    if (dn < NUM_DUNGEONS - 1 && bossMaxRar > RARITY_EPIC) bossMaxRar = RARITY_EPIC;
-
-    const int *weights = (dn <= 3) ? BOSS_W_EARLY :
-                         (dn <  NUM_DUNGEONS - 1) ? BOSS_W_HIGH : BOSS_W_FINAL;
-
-    int hasRarity[NUM_RARITIES] = {0};
-    for (int r = 0; r <= bossMaxRar; r++)
-        hasRarity[r] = 1;
-    for (int i = 0; i < data_num_items(); i++) {
-        const ItemDef *it = data_item(i);
-        if (it->levelReq >= dg->levelReq - 10 && it->levelReq <= dg->levelReq + 20 &&
-            it->rarity <= bossMaxRar &&
-            (it->classMask == 0 || (it->classMask & classMask)))
-            hasRarity[it->rarity] = 1;
-    }
-
-    int totalWeight = 0;
-    for (int r = 0; r < NUM_RARITIES; r++)
-        if (r <= bossMaxRar && hasRarity[r]) totalWeight += weights[r];
-    if (totalWeight == 0) return;
-
-    int roll = rand() % totalWeight;
-    int chosenRarity = 0, accum = 0;
-    for (int r = 0; r < NUM_RARITIES; r++) {
-        if (r > bossMaxRar || !hasRarity[r]) continue;
-        accum += weights[r];
-        if (roll < accum) { chosenRarity = r; break; }
-    }
+    int rarity = roll_rarity(BOSS_W[dn]);
 
     ItemDef drop;
-    if (chosenRarity <= RARITY_RARE) {
-        int slot = rand() % NUM_SLOTS;
-        data_generate_item(&drop, slot, chosenRarity, drop_level(dn), h->classId);
-    } else {
-        int candidates[256], nc = 0;
-        for (int i = 0; i < data_num_items(); i++) {
-            const ItemDef *it = data_item(i);
-            if (it->rarity == chosenRarity &&
-                it->levelReq >= dg->levelReq - 10 && it->levelReq <= dg->levelReq + 20 &&
-                (it->classMask == 0 || (it->classMask & classMask)))
-                candidates[nc++] = i;
+    if (rarity >= RARITY_EPIC) {
+        if (!pick_static_item(&drop, rarity, dg, classMask)) {
+            /* No matching static item — fallback to procedural Rare */
+            data_generate_item(&drop, rand() % NUM_SLOTS, RARITY_RARE,
+                               drop_level(dn), h->classId);
         }
-        if (nc == 0) return;
-        drop = *data_item(candidates[rand() % nc]);
+    } else {
+        data_generate_item(&drop, rand() % NUM_SLOTS, rarity,
+                           drop_level(dn), h->classId);
     }
 
     if (h->autoSellThreshold > 0 && drop.rarity < h->autoSellThreshold) {
@@ -332,8 +342,8 @@ static void try_boss_loot(GameState *gs) {
 }
 
 /*
- * Normal mob loot: roll against dropChance, randomized item level via drop_level().
- * D4-D8 mobs have a 2% chance to drop an Epic from the static ITEMS[] table.
+ * Normal/elite mob loot: roll against dropChance, then pick rarity from
+ * the per-dungeon weight table (MOB_W for normal, ELITE_W for elites).
  */
 static void try_loot_drop(GameState *gs) {
     Hero *h = &gs->hero;
@@ -346,37 +356,20 @@ static void try_loot_drop(GameState *gs) {
 
     int dn = gs->currentDungeon;
     int classMask = (1 << h->classId);
-    int lvl = drop_level(dn);
+    const int *weights = gs->isElite ? ELITE_W[dn] : MOB_W[dn];
+    int rarity = roll_rarity(weights);
+
     ItemDef drop;
-
-    /* Epic from static table: 2% for normal mobs, 10% for elites (D4-D8) */
-    int epicChance = gs->isElite ? 10 : 2;
-    if (MOB_MAX_RARITY[dn] >= RARITY_EPIC && (rand() % 100) < epicChance) {
-        int candidates[256], nc = 0;
-        for (int i = 0; i < data_num_items(); i++) {
-            const ItemDef *it = data_item(i);
-            if (it->rarity == RARITY_EPIC &&
-                it->levelReq >= dg->levelReq - 10 && it->levelReq <= dg->levelReq + 20 &&
-                (it->classMask == 0 || (it->classMask & classMask)))
-                candidates[nc++] = i;
+    if (rarity >= RARITY_EPIC) {
+        if (!pick_static_item(&drop, rarity, dg, classMask)) {
+            data_generate_item(&drop, rand() % NUM_SLOTS, RARITY_RARE,
+                               drop_level(dn), h->classId);
         }
-        if (nc > 0) {
-            drop = *data_item(candidates[rand() % nc]);
-            goto got_drop;
-        }
+    } else {
+        data_generate_item(&drop, rand() % NUM_SLOTS, rarity,
+                           drop_level(dn), h->classId);
     }
 
-    {
-        int maxRar = MOB_MAX_RARITY[dn];
-        if (maxRar > RARITY_RARE) maxRar = RARITY_RARE;
-        int minRar = gs->isElite ? RARITY_UNCOMMON : RARITY_COMMON;
-        if (minRar > maxRar) minRar = maxRar;
-        int rarity = minRar + rand() % (maxRar - minRar + 1);
-        int slot = rand() % NUM_SLOTS;
-        data_generate_item(&drop, slot, rarity, lvl, h->classId);
-    }
-
-got_drop:
     if (h->autoSellThreshold > 0 && drop.rarity < h->autoSellThreshold) {
         int sp = drop.price / 2;
         if (sp < 1) sp = 1;
