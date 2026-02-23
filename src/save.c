@@ -221,11 +221,18 @@ void save_refresh_slots(GameState *gs) {
         memset(&h, 0, sizeof(Hero));
         if (fread(&h, sizeof(Hero), 1, f) < 1 && ver == SAVE_VER) { fclose(f); continue; }
 
-         info->exists  = 1;
+        int dg = 0, inDg = 0;
+        if (fread(&dg,  sizeof(int), 1, f) != 1) dg  = 0;
+        if (fread(&inDg, sizeof(int), 1, f) != 1) inDg = 0;
+
+        info->exists  = 1;
         strncpy(info->name, h.name, MAX_NAME - 1);
         info->name[MAX_NAME - 1] = '\0';
         info->level   = h.level;
         info->classId = h.classId;
+        info->hero    = h;
+        info->dungeon = dg;
+        info->wasInDungeon = inDg;
         fclose(f);
     }
 }

@@ -2236,10 +2236,6 @@ static void render_enemy_panel(GameState *gs) {
                     }
                     wattroff(w, COLOR_PAIR(CP_WHITE));
                 }
-                const ClassDef *cd = data_class(info->classId);
-                wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-                mvwprintw(w, 6, 2, "Lv.%d %s", info->level, cd->name);
-                wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
             }
         }
         wnoutrefresh(w);
@@ -2428,6 +2424,72 @@ static void render_log_panel(GameState *gs) {
     wattron(w, COLOR_PAIR(CP_BORDER));
     box(w, 0, 0);
     wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    /* Save-select: show full hero detail instead of combat log */
+    if (gs->screen == SCR_SAVE_SELECT) {
+        if (gs->menuIdx < NUM_SAVE_SLOTS) {
+            SaveSlotInfo *info = &gs->slotInfo[gs->menuIdx];
+            if (info->exists) {
+                Hero *h = &info->hero;
+                const ClassDef *cd = data_class(h->classId);
+                EStats es = hero_effective_stats(h);
+
+                wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+                mvwprintw(w, 1, 2, "Lv.%d %s", h->level, cd->name);
+                wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
+
+                wattron(w, COLOR_PAIR(CP_YELLOW));
+                mvwprintw(w, 1, 30, "Gold: %d", h->gold);
+                wattroff(w, COLOR_PAIR(CP_YELLOW));
+
+                wattron(w, COLOR_PAIR(CP_WHITE));
+                mvwprintw(w, 2, 2, "HP:%-5d DMG:%-4d DR:%d%%",
+                          es.maxHp, es.damage, (int)(es.dmgReduction * 100));
+                mvwprintw(w, 3, 2, "SPD:%dms  Crit:%.0f%%  Dodge:%.0f%%",
+                          es.tickRate, es.critChance * 100, es.dodgeChance * 100);
+                wattroff(w, COLOR_PAIR(CP_WHITE));
+
+                mvwhline(w, 4, 1, ACS_HLINE, RIGHT_W - 2);
+
+                for (int s = 0; s < NUM_SLOTS; s++) {
+                    int row = 5 + s;
+                    if (row >= LOG_H - 2) break;
+                    wattron(w, COLOR_PAIR(CP_WHITE));
+                    mvwprintw(w, row, 2, "%-7s", data_slot_name(s));
+                    wattroff(w, COLOR_PAIR(CP_WHITE));
+                    if (h->hasEquip[s]) {
+                        int rc = data_rarity_color(h->equipment[s].rarity);
+                        wattron(w, COLOR_PAIR(rc));
+                        mvwprintw(w, row, 10, "%-28.28s", h->equipment[s].name);
+                        wattroff(w, COLOR_PAIR(rc));
+                        wattron(w, COLOR_PAIR(CP_WHITE));
+                        mvwprintw(w, row, 39, "Lv.%d", h->equipment[s].levelReq);
+                        wattroff(w, COLOR_PAIR(CP_WHITE));
+                    } else {
+                        wattron(w, COLOR_PAIR(CP_DEFAULT));
+                        mvwprintw(w, row, 10, "---");
+                        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+                    }
+                }
+
+                mvwhline(w, 12, 1, ACS_HLINE, RIGHT_W - 2);
+
+                wattron(w, COLOR_PAIR(CP_WHITE));
+                mvwprintw(w, 13, 2, "Kills:%-5d Deaths:%-3d", h->totalKills, h->deaths);
+                wattroff(w, COLOR_PAIR(CP_WHITE));
+                if (info->wasInDungeon) {
+                    const DungeonDef *dg = data_dungeon(info->dungeon);
+                    if (dg) {
+                        wattron(w, COLOR_PAIR(CP_CYAN));
+                        mvwprintw(w, 13, 28, "In: %s", dg->name);
+                        wattroff(w, COLOR_PAIR(CP_CYAN));
+                    }
+                }
+            }
+        }
+        wnoutrefresh(w);
+        return;
+    }
 
     int logStartRow = 1;
     int maxLogLines = LOG_H - 2;

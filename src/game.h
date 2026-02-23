@@ -337,6 +337,9 @@ typedef struct {
     char name[MAX_NAME];
     int  level;
     int  classId;
+    Hero hero;           /* full hero snapshot for save-select detail panel */
+    int  dungeon;        /* currentDungeon at time of save */
+    int  wasInDungeon;   /* whether the hero was actively in a dungeon */
 } SaveSlotInfo;
 
 typedef struct {
