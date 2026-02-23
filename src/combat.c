@@ -80,10 +80,10 @@ void combat_spawn(GameState *gs) {
         snprintf(eliteName, MAX_NAME, "Elite %s", et->name);
         strncpy(e->name, eliteName, MAX_NAME - 1);
         e->name[MAX_NAME - 1] = '\0';
-        e->maxHp     *= 3;
+        e->maxHp      = e->maxHp * 3 / 2;
         e->hp         = e->maxHp;
-        e->attack    *= 3;
-        e->defense   *= 3;
+        e->attack     = e->attack * 3 / 2;
+        e->defense    = e->defense * 3 / 2;
         e->xpReward  *= 3;
         e->goldReward*= 3;
         e->dropChance = 1.0f;
@@ -606,7 +606,7 @@ enemy_killed:
                      e->name, xp, gold);
             ui_log(gs, buf, gs->isElite ? CP_YELLOW : CP_GREEN);
             if (gs->isElite) {
-                try_boss_loot(gs);
+                try_loot_drop(gs);
             } else {
                 try_loot_drop(gs);
             }
