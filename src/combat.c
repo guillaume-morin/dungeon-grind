@@ -491,6 +491,7 @@ void combat_tick(GameState *gs) {
     if (gs->deathTimer > 0) {
         gs->deathTimer--;
         if (gs->deathTimer <= 0) {
+            gs->dungeonKills = 0;
             EStats es = hero_effective_stats(&gs->hero);
             gs->hero.hp = es.maxHp;
             gs->hero.maxHp = es.maxHp;
@@ -704,16 +705,15 @@ enemy_killed:
         h->gold -= goldLoss;
         if (h->gold < 0) h->gold = 0;
         h->numBuffs = 0;
-        gs->dungeonKills = 0;
         gs->bossActive = 0;
         gs->combatDmgDealt = 0;
         gs->combatDmgTaken = 0;
         gs->combatHealed = 0;
         gs->combatTicks = 0;
         if (goldLoss > 0)
-            snprintf(buf, sizeof(buf), "You died! Lost %d gold. Reviving...", goldLoss);
+            snprintf(buf, sizeof(buf), "Died at %d/%d! Lost %d gold.", gs->dungeonKills, BOSS_THRESHOLD, goldLoss);
         else
-            snprintf(buf, sizeof(buf), "You died! Reviving...");
+            snprintf(buf, sizeof(buf), "Died at %d/%d! Reviving...", gs->dungeonKills, BOSS_THRESHOLD);
         ui_log(gs, buf, CP_RED);
         gs->deathTimer = 4;
         check_achievements(gs);
