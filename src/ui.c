@@ -687,11 +687,7 @@ static void render_character(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
 
     int row = 2;
-    mvwprintw(w, row, 2, "XP ");
-    draw_bar(w, row, 5, 10, h->xp, hero_xp_needed(h->level), CP_YELLOW, CP_DEFAULT);
-    wattron(w, COLOR_PAIR(CP_WHITE));
-    wprintw(w, " %d/%d", h->xp, hero_xp_needed(h->level));
-    wattroff(w, COLOR_PAIR(CP_WHITE));
+    mvwprintw(w, row, 2, "XP  %d / %d", h->xp, hero_xp_needed(h->level));
     row++;
 
     if (h->talentPoints > 0) {
