@@ -567,7 +567,7 @@ enemy_killed:
         h->gold += gold;
         h->totalGoldEarned += gold;
 
-        int xp = (int)(e->xpReward * es.xpMultiplier * 1.15f);
+        int xp = (int)(e->xpReward * es.xpMultiplier);
         if (gs->hardModeActive) xp = xp * 150 / 100;
 
         if (gs->bossActive) {
