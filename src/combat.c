@@ -289,7 +289,7 @@ static int roll_rarity(const int weights[NUM_RARITIES]) {
  * Returns 1 on success (drop written), 0 if no candidates found.
  */
 static int pick_static_item(ItemDef *drop, int rarity, const DungeonDef *dg, int classMask) {
-    int candidates[256], nc = 0;
+    int candidates[512], nc = 0;
     for (int i = 0; i < data_num_items(); i++) {
         const ItemDef *it = data_item(i);
         if (it->rarity == rarity &&

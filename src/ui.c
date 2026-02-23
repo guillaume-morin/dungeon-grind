@@ -964,19 +964,6 @@ static void render_ency_classes_detail(GameState *gs) {
               cd->baseHp, cd->hpPerLevel, cd->resourceName, cd->baseResource, cd->maxResource);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
-    char growthBuf[128];
-    int pos = 0;
-    pos += snprintf(growthBuf + pos, sizeof(growthBuf) - pos, "Growth:");
-    for (int s = 0; s < NUM_STATS; s++) {
-        if (cd->growthPerLevel[s] > 0) {
-            pos += snprintf(growthBuf + pos, sizeof(growthBuf) - pos, " %s+%d",
-                           data_stat_short(s), cd->growthPerLevel[s]);
-        }
-    }
-    wattron(w, COLOR_PAIR(CP_GREEN));
-    mvwprintw(w, 6, 2, "%s", growthBuf);
-    wattroff(w, COLOR_PAIR(CP_GREEN));
-
     wnoutrefresh(w);
 }
 
