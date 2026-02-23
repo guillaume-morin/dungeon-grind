@@ -65,6 +65,12 @@
 #define NUM_TITLES       10
 #define NUM_AFFIXES      6
 
+#define NUM_TALENT_TREES   3
+#define TALENT_NODES_PER_TREE 15
+#define TALENT_TIERS       5
+#define MAX_TALENT_BONUSES 3
+#define MAX_ACTIVE_SKILLS  8
+
 /* ── enums ─────────────────────────────────────────────────────────── */
 
 enum Stat    { STR, AGI, INT_, WIS, VIT, DEF, SPD };
@@ -82,7 +88,8 @@ enum Screen {
     SCR_ENCYCLOPEDIA, SCR_ENCY_CLASSES, SCR_ENCY_STATS,
     SCR_ENCY_ITEMS, SCR_ENCY_ENEMIES, SCR_ENCY_BOSSES,
     SCR_ENCY_SKILLS, SCR_ENCY_DUNGEONS, SCR_ENCY_COMBAT,
-    SCR_ACHIEVEMENTS, SCR_TITLES, SCR_BULK_SELL, SCR_ENCY_AFFIXES
+    SCR_ACHIEVEMENTS, SCR_TITLES, SCR_BULK_SELL, SCR_ENCY_AFFIXES,
+    SCR_TALENTS
 };
 
 /* ── color pairs (CP_*) ───────────────────────────────────────────── */
@@ -199,6 +206,46 @@ typedef struct {
     int  achievementIdx; /* index into achievements array, -1 if special */
 } TitleDef;
 
+/* Talent bonus types: 0x00–0x0F flat (applied first), 0x10+ percentage (scale total). */
+enum TalentBonusType {
+    TB_NONE = 0,
+    TB_FLAT_STR, TB_FLAT_AGI, TB_FLAT_INT, TB_FLAT_WIS,
+    TB_FLAT_VIT, TB_FLAT_DEF, TB_FLAT_SPD,
+    TB_FLAT_HP, TB_FLAT_CRIT, TB_FLAT_DODGE, TB_FLAT_BLOCK,
+    TB_FLAT_DMGREDUCE,
+    TB_PCT_PHYS_DMG = 0x10, TB_PCT_SPELL_DMG, TB_PCT_HEAL,
+    TB_PCT_HP, TB_PCT_CRIT_DMG, TB_PCT_DODGE, TB_PCT_ARMOR,
+    TB_PCT_ATKSPD, TB_PCT_XP, TB_PCT_GOLD
+};
+
+typedef struct {
+    uint8_t type;
+    int16_t perRank;
+} TalentBonus;
+
+typedef struct {
+    char     name[20];
+    char     desc[48];
+    uint8_t  tier;
+    uint8_t  col;
+    uint8_t  maxRank;
+    uint8_t  isActive;
+    int8_t   prereqNode;
+    uint8_t  skillIdx;
+    TalentBonus bonus[MAX_TALENT_BONUSES];
+} TalentNodeDef;
+
+typedef struct {
+    char          name[16];
+    uint8_t       nodeCount;
+    uint8_t       color;
+    TalentNodeDef nodes[TALENT_NODES_PER_TREE];
+} TalentTreeDef;
+
+typedef struct {
+    TalentTreeDef trees[NUM_TALENT_TREES];
+} ClassTalentDef;
+
 /* Achievement bitfield macros (128 bits across 4 uint32s). */
 #define ACH_HAS(h, n) ((h)->achievements[(n)/32] & (1u << ((n)%32)))
 #define ACH_SET(h, n) ((h)->achievements[(n)/32] |= (1u << ((n)%32)))
@@ -258,8 +305,12 @@ typedef struct {
     Buff buffs[MAX_BUFFS];
     int  numBuffs;
 
-    int  skillChoices[MAX_SKILL_TIERS];   /* -1 = not yet chosen for this tier */
+    int  skillChoices[MAX_SKILL_TIERS];
     int  skillCooldowns[MAX_SKILL_TIERS];
+
+    uint8_t talentRanks[NUM_TALENT_TREES][TALENT_NODES_PER_TREE];
+    int  talentTreePoints[NUM_TALENT_TREES];
+    int  activeSkillCooldowns[MAX_ACTIVE_SKILLS];
 
     int  totalKills, deaths;
     int  totalGoldEarned, totalXpEarned;
@@ -324,6 +375,9 @@ typedef struct {
     int     hardModeActive;
     int     activeAffixes[2];
 
+    int     talentTreeIdx;
+    int     talentNodeIdx;
+
     int64_t offlineShowUntil;
     int     offlineXp;
     int     offlineGold;
@@ -340,26 +394,22 @@ typedef struct {
 
 /* ── hero.c ───────────────────────────────────────────────────────── */
 
-/* Initialize a hero with class defaults and zeroed gear/talents. */
 Hero    hero_create(int classId, const char *name);
-/* Compute all derived stats from base + talents (soft-capped) + equipment. */
 EStats  hero_effective_stats(const Hero *h);
-/* XP threshold to reach the next level: 50*level + 50. */
 int     hero_xp_needed(int level);
-/* Current XP as a 0.0–1.0 fraction of the level-up threshold. */
 float   hero_xp_pct(const Hero *h);
-/* Grant XP; auto-levels (with talent point + full heal). Returns 1 if leveled. */
 int     hero_add_xp(GameState *gs, int amount);
-/* Spend one talent point on a stat. Returns 0 if out of points. */
-int     hero_alloc_talent(Hero *h, int stat);
-/* Equip item (auto-moves old item to inventory). Caller removes source copy. */
 int     hero_equip(Hero *h, const ItemDef *item);
-/* Move equipped item to inventory, clear slot, recompute HP. */
 void    hero_unequip(Hero *h, int slot);
-/* Add HP, clamped to maxHp. */
 void    hero_heal(Hero *h, int amount);
-/* Add resource, clamped to maxResource. */
 void    hero_restore_resource(Hero *h, int amount);
+
+int     hero_can_invest_talent(const Hero *h, int tree, int node);
+int     hero_invest_talent(Hero *h, int tree, int node);
+int     hero_uninvest_talent(Hero *h, int tree, int node);
+void    hero_reset_talents(Hero *h);
+int     hero_total_talent_points_spent(const Hero *h);
+int     hero_collect_active_skills(const Hero *h, const SkillDef **out, int *cooldowns, int max);
 
 /* ── combat.c ─────────────────────────────────────────────────────── */
 
@@ -427,6 +477,10 @@ int                 data_skill_level(int tier);
 const AchievementDef *data_achievement(int id);
 const TitleDef       *data_title(int id);
 const char           *data_affix_name(int id);
+const ClassTalentDef *data_class_talents(int classId);
+const TalentTreeDef  *data_talent_tree(int classId, int tree);
+const TalentNodeDef  *data_talent_node(int classId, int tree, int node);
+const SkillDef       *data_talent_skill(int classId, int tree, int node);
 
 void    check_achievements(GameState *gs);
 

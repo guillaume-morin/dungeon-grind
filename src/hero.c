@@ -59,31 +59,75 @@ EStats hero_effective_stats(const Hero *h) {
     memset(&es, 0, sizeof(es));
     const ClassDef *cd = data_class(h->classId);
 
+    int talFlat[NUM_STATS] = {0};
+    int talFlatHp = 0, talFlatCrit = 0, talFlatDodge = 0, talFlatBlock = 0, talFlatDR = 0;
+    int pctPhysDmg=0, pctSpellDmg=0, pctHeal=0, pctHp=0, pctCritDmg=0;
+    int pctDodge=0, pctArmor=0, pctAtkSpd=0, pctXp=0, pctGold=0;
+
+    for (int t = 0; t < NUM_TALENT_TREES; t++) {
+        const TalentTreeDef *td = data_talent_tree(h->classId, t);
+        if (!td) continue;
+        for (int n = 0; n < td->nodeCount; n++) {
+            int ranks = h->talentRanks[t][n];
+            if (ranks == 0) continue;
+            const TalentNodeDef *nd = &td->nodes[n];
+            for (int b = 0; b < MAX_TALENT_BONUSES; b++) {
+                int val = nd->bonus[b].perRank * ranks;
+                switch (nd->bonus[b].type) {
+                case TB_NONE: break;
+                case TB_FLAT_STR: talFlat[STR] += val; break;
+                case TB_FLAT_AGI: talFlat[AGI] += val; break;
+                case TB_FLAT_INT: talFlat[INT_]+= val; break;
+                case TB_FLAT_WIS: talFlat[WIS] += val; break;
+                case TB_FLAT_VIT: talFlat[VIT] += val; break;
+                case TB_FLAT_DEF: talFlat[DEF] += val; break;
+                case TB_FLAT_SPD: talFlat[SPD] += val; break;
+                case TB_FLAT_HP:       talFlatHp    += val; break;
+                case TB_FLAT_CRIT:     talFlatCrit  += val; break;
+                case TB_FLAT_DODGE:    talFlatDodge += val; break;
+                case TB_FLAT_BLOCK:    talFlatBlock += val; break;
+                case TB_FLAT_DMGREDUCE:talFlatDR    += val; break;
+                case TB_PCT_PHYS_DMG:  pctPhysDmg   += val; break;
+                case TB_PCT_SPELL_DMG: pctSpellDmg  += val; break;
+                case TB_PCT_HEAL:      pctHeal      += val; break;
+                case TB_PCT_HP:        pctHp        += val; break;
+                case TB_PCT_CRIT_DMG:  pctCritDmg   += val; break;
+                case TB_PCT_DODGE:     pctDodge     += val; break;
+                case TB_PCT_ARMOR:     pctArmor     += val; break;
+                case TB_PCT_ATKSPD:    pctAtkSpd    += val; break;
+                case TB_PCT_XP:        pctXp        += val; break;
+                case TB_PCT_GOLD:      pctGold      += val; break;
+                }
+            }
+        }
+    }
+
     for (int i = 0; i < NUM_STATS; i++) {
         int base = cd->baseStats[i];
-        int tal  = h->talents[i];
-        if (tal > SOFT_CAP) tal = SOFT_CAP + (tal - SOFT_CAP) / 2;
+        int oldTal = h->talents[i];
+        if (oldTal > SOFT_CAP) oldTal = SOFT_CAP + (oldTal - SOFT_CAP) / 2;
 
         int eq = 0;
         for (int s = 0; s < NUM_SLOTS; s++)
             if (h->hasEquip[s]) eq += h->equipment[s].stats[i];
 
-        es.stats[i] = base + tal + eq;
+        es.stats[i] = base + oldTal + talFlat[i] + eq;
     }
 
     int pri = es.stats[cd->primaryStat];
-    es.maxHp = cd->baseHp + es.stats[VIT] * 5 + es.stats[STR] * 2;
+    es.maxHp = cd->baseHp + es.stats[VIT] * 5 + es.stats[STR] * 2 + talFlatHp;
     es.damage = (int)(pri * 1.5f + es.stats[STR] * 0.3f);
-    es.critChance = fminf(0.50f, es.stats[AGI] / 300.0f);
+    es.critChance = fminf(0.50f, es.stats[AGI] / 300.0f + talFlatCrit / 100.0f);
     es.critMult   = 1.5f;
-    es.dodgeChance = fminf(0.35f, es.stats[AGI] / 300.0f);
-    es.blockChance = (h->classId == CLASS_WARRIOR) ? fminf(0.30f, es.stats[DEF] / 250.0f) : 0;
+    es.dodgeChance = fminf(0.35f, es.stats[AGI] / 300.0f + talFlatDodge / 100.0f);
+    es.blockChance = (h->classId == CLASS_WARRIOR)
+        ? fminf(0.30f, es.stats[DEF] / 250.0f + talFlatBlock / 100.0f) : 0;
     es.blockReduction = 0.30f;
     es.dmgReduction   = fminf(0.50f, es.stats[DEF] / (es.stats[DEF] + 100.0f));
     es.tickRate = 150 + (int)(650.0f / (1.0f + es.stats[SPD] * 0.02f));
     es.healPower = 0;
     es.xpMultiplier = 1.0f + fminf(0.50f, es.stats[INT_] * 0.005f);
-    es.flatDmgReduce = (int)(es.stats[WIS] * 0.15f);
+    es.flatDmgReduce = (int)(es.stats[WIS] * 0.15f) + talFlatDR;
 
     switch (h->classId) {
     case CLASS_MAGE:
@@ -100,6 +144,27 @@ EStats hero_effective_stats(const Hero *h) {
     default:
         break;
     }
+
+    int isPhysical = (h->classId == CLASS_WARRIOR || h->classId == CLASS_ROGUE);
+    if (isPhysical && pctPhysDmg > 0)
+        es.damage = es.damage * (100 + pctPhysDmg) / 100;
+    if (!isPhysical && pctSpellDmg > 0)
+        es.damage = es.damage * (100 + pctSpellDmg) / 100;
+    if (pctHeal > 0 && es.healPower > 0)
+        es.healPower = es.healPower * (100 + pctHeal) / 100;
+    if (pctHp > 0)
+        es.maxHp = es.maxHp * (100 + pctHp) / 100;
+    if (pctCritDmg > 0)
+        es.critMult += pctCritDmg / 100.0f;
+    if (pctDodge > 0)
+        es.dodgeChance = fminf(0.50f, es.dodgeChance + pctDodge / 100.0f);
+    if (pctArmor > 0)
+        es.dmgReduction = fminf(0.60f, es.dmgReduction * (100 + pctArmor) / 100.0f);
+    if (pctAtkSpd > 0)
+        es.tickRate = (int)(es.tickRate * 100.0f / (100 + pctAtkSpd));
+    if (pctXp > 0)
+        es.xpMultiplier *= (100 + pctXp) / 100.0f;
+    (void)pctGold;
 
     int achBonusHp = 0, achBonusDmgPct = 0, achBonusXpPct = 0;
     for (int a = 0; a < NUM_ACHIEVEMENTS; a++) {
@@ -165,13 +230,116 @@ int hero_add_xp(GameState *gs, int amount) {
     return leveled;
 }
 
-int hero_alloc_talent(Hero *h, int stat) {
-    if (h->talentPoints <= 0 || stat < 0 || stat >= NUM_STATS) return 0;
-    h->talents[stat]++;
+static const int TIER_GATE[TALENT_TIERS] = { 0, 5, 10, 15, 20 };
+
+int hero_total_talent_points_spent(const Hero *h) {
+    int total = 0;
+    for (int t = 0; t < NUM_TALENT_TREES; t++)
+        total += h->talentTreePoints[t];
+    return total;
+}
+
+int hero_can_invest_talent(const Hero *h, int tree, int node) {
+    if (h->talentPoints <= 0) return 0;
+    if (tree < 0 || tree >= NUM_TALENT_TREES) return 0;
+
+    const TalentNodeDef *nd = data_talent_node(h->classId, tree, node);
+    if (!nd) return 0;
+    if (h->talentRanks[tree][node] >= nd->maxRank) return 0;
+    if (h->talentTreePoints[tree] < TIER_GATE[nd->tier]) return 0;
+    if (nd->prereqNode >= 0) {
+        const TalentNodeDef *pre = data_talent_node(h->classId, tree, nd->prereqNode);
+        if (!pre || h->talentRanks[tree][nd->prereqNode] < pre->maxRank) return 0;
+    }
+    return 1;
+}
+
+int hero_invest_talent(Hero *h, int tree, int node) {
+    if (!hero_can_invest_talent(h, tree, node)) return 0;
+    h->talentRanks[tree][node]++;
+    h->talentTreePoints[tree]++;
     h->talentPoints--;
     EStats es = hero_effective_stats(h);
     h->maxHp = es.maxHp;
+    if (h->hp > h->maxHp) h->hp = h->maxHp;
     return 1;
+}
+
+static int can_uninvest_node(const Hero *h, int tree, int node) {
+    if (h->talentRanks[tree][node] <= 0) return 0;
+
+    const TalentTreeDef *td = data_talent_tree(h->classId, tree);
+    if (!td) return 0;
+
+    uint8_t simRanks[TALENT_NODES_PER_TREE];
+    for (int i = 0; i < TALENT_NODES_PER_TREE; i++)
+        simRanks[i] = h->talentRanks[tree][i];
+    simRanks[node]--;
+
+    int simTreePts = h->talentTreePoints[tree] - 1;
+
+    for (int i = 0; i < td->nodeCount; i++) {
+        if (simRanks[i] == 0) continue;
+        const TalentNodeDef *nd = &td->nodes[i];
+
+        if (simTreePts < TIER_GATE[nd->tier] && nd->tier > 0) {
+            int ptsBelow = 0;
+            for (int j = 0; j < td->nodeCount; j++)
+                if (td->nodes[j].tier < nd->tier) ptsBelow += simRanks[j];
+            if (ptsBelow < TIER_GATE[nd->tier]) return 0;
+        }
+
+        if (nd->prereqNode >= 0) {
+            const TalentNodeDef *pre = &td->nodes[nd->prereqNode];
+            if (simRanks[nd->prereqNode] < pre->maxRank) return 0;
+        }
+    }
+    return 1;
+}
+
+int hero_uninvest_talent(Hero *h, int tree, int node) {
+    if (!can_uninvest_node(h, tree, node)) return 0;
+    h->talentRanks[tree][node]--;
+    h->talentTreePoints[tree]--;
+    h->talentPoints++;
+    EStats es = hero_effective_stats(h);
+    h->maxHp = es.maxHp;
+    if (h->hp > h->maxHp) h->hp = h->maxHp;
+    return 1;
+}
+
+void hero_reset_talents(Hero *h) {
+    int refunded = 0;
+    for (int t = 0; t < NUM_TALENT_TREES; t++) {
+        refunded += h->talentTreePoints[t];
+        h->talentTreePoints[t] = 0;
+        for (int n = 0; n < TALENT_NODES_PER_TREE; n++)
+            h->talentRanks[t][n] = 0;
+    }
+    h->talentPoints += refunded;
+    memset(h->activeSkillCooldowns, 0, sizeof(h->activeSkillCooldowns));
+    EStats es = hero_effective_stats(h);
+    h->maxHp = es.maxHp;
+    if (h->hp > h->maxHp) h->hp = h->maxHp;
+}
+
+int hero_collect_active_skills(const Hero *h, const SkillDef **out, int *cooldowns, int max) {
+    int count = 0;
+    for (int t = 0; t < NUM_TALENT_TREES && count < max; t++) {
+        const TalentTreeDef *td = data_talent_tree(h->classId, t);
+        if (!td) continue;
+        for (int n = 0; n < td->nodeCount && count < max; n++) {
+            if (h->talentRanks[t][n] == 0) continue;
+            const TalentNodeDef *nd = &td->nodes[n];
+            if (!nd->isActive) continue;
+            const SkillDef *sk = data_talent_skill(h->classId, t, n);
+            if (!sk) continue;
+            out[count] = sk;
+            cooldowns[count] = h->activeSkillCooldowns[count];
+            count++;
+        }
+    }
+    return count;
 }
 
 /*

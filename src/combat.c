@@ -413,6 +413,31 @@ void combat_try_skills(GameState *gs) {
     Hero *h = &gs->hero;
     Enemy *e = &gs->enemy;
 
+    const SkillDef *skills[MAX_ACTIVE_SKILLS];
+    int cooldowns[MAX_ACTIVE_SKILLS];
+    int nSkills = hero_collect_active_skills(h, skills, cooldowns, MAX_ACTIVE_SKILLS);
+
+    for (int i = nSkills - 1; i >= 0; i--) {
+        if (h->activeSkillCooldowns[i] > 0) continue;
+        const SkillDef *sk = skills[i];
+        if (!sk || !sk->name) continue;
+        if (h->resource < sk->resourceCost) continue;
+
+        if (sk->hpBelow > 0) {
+            int pct = h->hp * 100 / (h->maxHp > 0 ? h->maxHp : 1);
+            if (pct >= sk->hpBelow) continue;
+        }
+        if (sk->enemyHpBelow > 0) {
+            int pct = e->hp * 100 / (e->maxHp > 0 ? e->maxHp : 1);
+            if (pct >= sk->enemyHpBelow) continue;
+        }
+
+        h->resource -= sk->resourceCost;
+        h->activeSkillCooldowns[i] = sk->cooldown;
+        apply_skill(gs, sk);
+        return;
+    }
+
     for (int t = MAX_SKILL_TIERS - 1; t >= 0; t--) {
         if (h->skillChoices[t] < 0 || h->skillChoices[t] > 1) continue;
         if (h->level < data_skill_level(t)) continue;
@@ -420,14 +445,12 @@ void combat_try_skills(GameState *gs) {
 
         const SkillDef *sk = data_skill(h->classId, t, h->skillChoices[t]);
         if (!sk || !sk->name) continue;
-
         if (h->resource < sk->resourceCost) continue;
 
         if (sk->hpBelow > 0) {
             int pct = h->hp * 100 / (h->maxHp > 0 ? h->maxHp : 1);
             if (pct >= sk->hpBelow) continue;
         }
-
         if (sk->enemyHpBelow > 0) {
             int pct = e->hp * 100 / (e->maxHp > 0 ? e->maxHp : 1);
             if (pct >= sk->enemyHpBelow) continue;
@@ -489,6 +512,8 @@ void combat_tick(GameState *gs) {
 
     for (int t = 0; t < MAX_SKILL_TIERS; t++)
         if (h->skillCooldowns[t] > 0) h->skillCooldowns[t]--;
+    for (int i = 0; i < MAX_ACTIVE_SKILLS; i++)
+        if (h->activeSkillCooldowns[i] > 0) h->activeSkillCooldowns[i]--;
 
     const ClassDef *cd = data_class(h->classId);
     hero_restore_resource(h, cd->resourceRegen);

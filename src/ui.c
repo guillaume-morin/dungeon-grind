@@ -1,18 +1,14 @@
 /*
- * ui.c — All ncurses rendering and input handling (~2150 lines).
+ * ui.c — All ncurses rendering and input handling.
  *
  * Layout: 80×24 terminal. Left panel (28 cols) for menus, right panel
  * split into enemy display (top 8 rows) and combat log (bottom).
  * The right "enemy" panel doubles as a context-sensitive detail view:
- * item stats in equipment/shop, stat preview in character screen,
- * skill description in skills screen, and encyclopedia details.
- * render_enemy_panel() dispatches to the correct detail renderer
- * based on gs->screen.
+ * item stats in equipment/shop, encyclopedia details, etc.
+ * render_enemy_panel() dispatches based on gs->screen.
  *
- * render_stat_detail() handles the talent soft-cap display: it searches
- * for the minimum talent point increment (1–20) that actually produces
- * a visible stat change, accounting for integer division dead zones
- * in the soft cap formula.
+ * The talent tree screen (SCR_TALENTS) uses a temporary full-screen
+ * WINDOW that bypasses the normal left/right panel layout.
  */
 #include "game.h"
 #include <stdio.h>
@@ -300,7 +296,7 @@ static void render_name_input(GameState *gs) {
     wnoutrefresh(w);
 }
 
-static const char *MAIN_MENU[] = { "DUNGEON", "CHARACTER", "SKILLS", "EQUIPMENT", "SHOP", "ENCYCLOPEDIA", "QUIT" };
+static const char *MAIN_MENU[] = { "DUNGEON", "CHARACTER", "TALENTS", "EQUIPMENT", "SHOP", "ENCYCLOPEDIA", "QUIT" };
 #define MAIN_MENU_N 7
 
 static void render_main_menu(GameState *gs) {
@@ -323,10 +319,13 @@ static void render_main_menu(GameState *gs) {
     draw_bar(w, 2, 5, 10, h->hp, es.maxHp, CP_RED, CP_DEFAULT);
     wprintw(w, " %d", h->hp);
 
-    wattron(w, COLOR_PAIR(CP_YELLOW));
-    mvwprintw(w, 3, 2, "XP ");
-    wattroff(w, COLOR_PAIR(CP_YELLOW));
-    draw_bar(w, 3, 5, 10, h->xp, hero_xp_needed(h->level), CP_YELLOW, CP_DEFAULT);
+    const ClassDef *cd = data_class(h->classId);
+    int resColor = (h->classId == CLASS_WARRIOR) ? CP_RED :
+                   (h->classId == CLASS_ROGUE)   ? CP_YELLOW : CP_BLUE;
+    wattron(w, COLOR_PAIR(resColor));
+    mvwprintw(w, 3, 2, "%-3.3s", cd ? cd->resourceName : "Res");
+    wattroff(w, COLOR_PAIR(resColor));
+    draw_bar(w, 3, 5, 10, h->resource, h->maxResource, resColor, CP_DEFAULT);
 
     wattron(w, COLOR_PAIR(CP_YELLOW));
     mvwprintw(w, 4, 2, "Gold: %d", h->gold);
@@ -708,6 +707,29 @@ static void render_character(GameState *gs) {
             for (int j = 0; j < NUM_STATS; j++)
                 eqBonus[j] += h->equipment[s].stats[j];
 
+    int treeBonusStat[NUM_STATS] = {0};
+    for (int t = 0; t < NUM_TALENT_TREES; t++) {
+        const TalentTreeDef *td = data_talent_tree(h->classId, t);
+        if (!td) continue;
+        for (int n = 0; n < td->nodeCount; n++) {
+            int ranks = h->talentRanks[t][n];
+            if (ranks == 0) continue;
+            for (int b = 0; b < MAX_TALENT_BONUSES; b++) {
+                int val = td->nodes[n].bonus[b].perRank * ranks;
+                switch (td->nodes[n].bonus[b].type) {
+                case TB_FLAT_STR: treeBonusStat[STR] += val; break;
+                case TB_FLAT_AGI: treeBonusStat[AGI] += val; break;
+                case TB_FLAT_INT: treeBonusStat[INT_]+= val; break;
+                case TB_FLAT_WIS: treeBonusStat[WIS] += val; break;
+                case TB_FLAT_VIT: treeBonusStat[VIT] += val; break;
+                case TB_FLAT_DEF: treeBonusStat[DEF] += val; break;
+                case TB_FLAT_SPD: treeBonusStat[SPD] += val; break;
+                default: break;
+                }
+            }
+        }
+    }
+
     wattron(w, COLOR_PAIR(CP_DEFAULT));
     mvwprintw(w, row, 9, "%3s", "Tot");
     mvwprintw(w, row, 13, "%4s", "Tal");
@@ -716,32 +738,24 @@ static void render_character(GameState *gs) {
     row++;
 
     for (int i = 0; i < NUM_STATS; i++) {
-        int tal = h->talents[i], eq = eqBonus[i];
+        int tal = h->talents[i] + treeBonusStat[i];
+        int eq = eqBonus[i];
         char tBuf[8] = "", eBuf[8] = "";
         if (tal > 0) snprintf(tBuf, sizeof(tBuf), "%d", tal);
         if (eq > 0)  snprintf(eBuf, sizeof(eBuf), "%d", eq);
 
-        if (i == gs->menuIdx) {
-            char line[LEFT_W];
-            snprintf(line, sizeof(line), " > %-4s %3d %4s %5s",
-                     data_stat_short(i), es.stats[i], tBuf, eBuf);
-            wattron(w, COLOR_PAIR(CP_SELECTED));
-            mvwprintw(w, row, 1, "%-*.*s", LEFT_W - 2, LEFT_W - 2, line);
-            wattroff(w, COLOR_PAIR(CP_SELECTED));
-        } else {
-            wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row, 1, "   %-4s %3d", data_stat_short(i), es.stats[i]);
-            wattroff(w, COLOR_PAIR(CP_DEFAULT));
-            if (tal > 0) {
-                wattron(w, COLOR_PAIR(CP_GREEN));
-                mvwprintw(w, row, 13, "%4s", tBuf);
-                wattroff(w, COLOR_PAIR(CP_GREEN));
-            }
-            if (eq > 0) {
-                wattron(w, COLOR_PAIR(CP_CYAN));
-                mvwprintw(w, row, 18, "%5s", eBuf);
-                wattroff(w, COLOR_PAIR(CP_CYAN));
-            }
+        wattron(w, COLOR_PAIR(CP_DEFAULT));
+        mvwprintw(w, row, 1, "   %-4s %3d", data_stat_short(i), es.stats[i]);
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
+        if (tal > 0) {
+            wattron(w, COLOR_PAIR(CP_GREEN));
+            mvwprintw(w, row, 13, "%4s", tBuf);
+            wattroff(w, COLOR_PAIR(CP_GREEN));
+        }
+        if (eq > 0) {
+            wattron(w, COLOR_PAIR(CP_CYAN));
+            mvwprintw(w, row, 18, "%5s", eBuf);
+            wattroff(w, COLOR_PAIR(CP_CYAN));
         }
         row++;
     }
@@ -761,7 +775,6 @@ static void render_character(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_GREEN));
 
     wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 4, 2, "[Enter] +1 Talent");
     mvwprintw(w, PANEL_H - 3, 2, "[T] Titles");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
     wattroff(w, COLOR_PAIR(CP_CYAN));
@@ -1755,291 +1768,9 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
  * the 10 derived fields by temporarily adding points, computing stats,
  * and comparing. Shows "Next bonus: +N pts" when in a dead zone.
  */
-static void render_stat_detail(GameState *gs) {
-    WINDOW *w = gs->wEnemy;
-    werase(w);
-    wattron(w, COLOR_PAIR(CP_BORDER));
-    box(w, 0, 0);
-    wattroff(w, COLOR_PAIR(CP_BORDER));
 
-    int stat = gs->menuIdx;
-    if (stat < 0 || stat >= NUM_STATS) { wnoutrefresh(w); return; }
 
-    Hero *h = &gs->hero;
-    EStats cur = hero_effective_stats(h);
 
-    int inc;
-    EStats nxt;
-    for (inc = 1; inc <= 20; inc++) {
-        h->talents[stat] += inc;
-        nxt = hero_effective_stats(h);
-        h->talents[stat] -= inc;
-        if (nxt.damage != cur.damage || nxt.maxHp != cur.maxHp ||
-            nxt.critChance != cur.critChance || nxt.dodgeChance != cur.dodgeChance ||
-            nxt.dmgReduction != cur.dmgReduction || nxt.blockChance != cur.blockChance ||
-            nxt.tickRate != cur.tickRate || nxt.healPower != cur.healPower ||
-            nxt.xpMultiplier != cur.xpMultiplier || nxt.flatDmgReduce != cur.flatDmgReduce)
-            break;
-    }
-
-    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-    mvwprintw(w, 1, 2, "%s", data_stat_name(stat));
-    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-    wattron(w, COLOR_PAIR(CP_WHITE));
-    wprintw(w, "  %d", cur.stats[stat]);
-    wattroff(w, COLOR_PAIR(CP_WHITE));
-
-    if (inc == 1) {
-        wattron(w, COLOR_PAIR(CP_DEFAULT));
-        mvwprintw(w, 2, 2, "+1 point gives:");
-        wattroff(w, COLOR_PAIR(CP_DEFAULT));
-    } else if (inc <= 20) {
-        wattron(w, COLOR_PAIR(CP_YELLOW));
-        mvwprintw(w, 2, 2, "Next bonus: +%d pts", inc);
-        wattroff(w, COLOR_PAIR(CP_YELLOW));
-    } else {
-        wattron(w, COLOR_PAIR(CP_RED));
-        mvwprintw(w, 2, 2, "At maximum effect");
-        wattroff(w, COLOR_PAIR(CP_RED));
-    }
-
-    int row = 3;
-    int col2 = RIGHT_W / 2;
-
-    if (nxt.damage != cur.damage) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "DMG %d", cur.damage);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %d (+%d)", nxt.damage, nxt.damage - cur.damage);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.maxHp != cur.maxHp) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, col2, "HP %d", cur.maxHp);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %d", nxt.maxHp);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.damage != cur.damage || nxt.maxHp != cur.maxHp) row++;
-
-    if (nxt.critChance != cur.critChance) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "Crit %.1f%%", cur.critChance * 100);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %.1f%%", nxt.critChance * 100);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.dodgeChance != cur.dodgeChance) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, col2, "Dodge %.1f%%", cur.dodgeChance * 100);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %.1f%%", nxt.dodgeChance * 100);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.critChance != cur.critChance || nxt.dodgeChance != cur.dodgeChance) row++;
-
-    if (nxt.dmgReduction != cur.dmgReduction) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "DR %.1f%%", cur.dmgReduction * 100);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %.1f%%", nxt.dmgReduction * 100);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.blockChance != cur.blockChance) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, col2, "Block %.1f%%", cur.blockChance * 100);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %.1f%%", nxt.blockChance * 100);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.dmgReduction != cur.dmgReduction || nxt.blockChance != cur.blockChance) row++;
-
-    if (nxt.tickRate != cur.tickRate) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "Atk %.3f/s", 1000.0f / cur.tickRate);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %.3f/s", 1000.0f / nxt.tickRate);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.healPower != cur.healPower) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, col2, "Heal %d", cur.healPower);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %d", nxt.healPower);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.tickRate != cur.tickRate || nxt.healPower != cur.healPower) row++;
-
-    if (nxt.xpMultiplier != cur.xpMultiplier) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, 2, "XP +%.1f%%", (cur.xpMultiplier - 1.0f) * 100);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > +%.1f%%", (nxt.xpMultiplier - 1.0f) * 100);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-    if (nxt.flatDmgReduce != cur.flatDmgReduce) {
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, row, col2, "Ward %d", cur.flatDmgReduce);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        wprintw(w, " > %d", nxt.flatDmgReduce);
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-
-    wnoutrefresh(w);
-}
-
-static void render_skill_detail(GameState *gs) {
-    WINDOW *w = gs->wEnemy;
-    werase(w);
-    wattron(w, COLOR_PAIR(CP_BORDER));
-    box(w, 0, 0);
-    wattroff(w, COLOR_PAIR(CP_BORDER));
-
-    int total = MAX_SKILL_TIERS * 2;
-    if (gs->menuIdx < 0 || gs->menuIdx >= total) { wnoutrefresh(w); return; }
-
-    int tier = gs->menuIdx / 2;
-    int option = gs->menuIdx % 2;
-    const SkillDef *sk = data_skill(gs->hero.classId, tier, option);
-    if (!sk) { wnoutrefresh(w); return; }
-
-    int reqLvl = data_skill_level(tier);
-    int isLocked = gs->hero.level < reqLvl;
-    int chosen = gs->hero.skillChoices[tier];
-
-    wattron(w, COLOR_PAIR(CP_WHITE) | A_BOLD);
-    mvwprintw(w, 1, 2, "%s", sk->name);
-    wattroff(w, COLOR_PAIR(CP_WHITE) | A_BOLD);
-
-    wattron(w, COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, 3, 2, "%s", sk->description);
-    wattroff(w, COLOR_PAIR(CP_DEFAULT));
-
-    const ClassDef *cls = data_class(gs->hero.classId);
-    wattron(w, COLOR_PAIR(CP_YELLOW));
-    mvwprintw(w, 4, 2, "CD: %d  Cost: %d %s",
-              sk->cooldown, sk->resourceCost,
-              cls ? cls->resourceName : "");
-    wattroff(w, COLOR_PAIR(CP_YELLOW));
-
-    if (isLocked) {
-        wattron(w, COLOR_PAIR(CP_RED));
-        mvwprintw(w, 6, 2, "Locked (Lv %d)", reqLvl);
-        wattroff(w, COLOR_PAIR(CP_RED));
-    } else if (chosen == option) {
-        wattron(w, COLOR_PAIR(CP_CYAN));
-        mvwprintw(w, 6, 2, "Chosen");
-        wattroff(w, COLOR_PAIR(CP_CYAN));
-    } else if (chosen >= 0) {
-        wattron(w, COLOR_PAIR(CP_DEFAULT));
-        mvwprintw(w, 6, 2, "Not chosen");
-        wattroff(w, COLOR_PAIR(CP_DEFAULT));
-    } else {
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        mvwprintw(w, 6, 2, "Available");
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-    }
-
-    wnoutrefresh(w);
-}
-
-static void render_skills(GameState *gs) {
-    WINDOW *w = gs->wLeft;
-    werase(w);
-    wattron(w, COLOR_PAIR(CP_BORDER));
-    box(w, 0, 0);
-    wattroff(w, COLOR_PAIR(CP_BORDER));
-
-    wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-    mvwprintw(w, 1, 2, "Skills");
-    wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-
-    int helpRows = 3;
-    int maxRows = PANEL_H - 2 - helpRows - 1;
-    int selTier = gs->menuIdx / 2;
-    int scrollTier = 0;
-    int visibleTiers = maxRows / 3;
-    if (selTier >= scrollTier + visibleTiers)
-        scrollTier = selTier - visibleTiers + 1;
-    if (scrollTier < 0) scrollTier = 0;
-
-    for (int t = scrollTier; t < MAX_SKILL_TIERS; t++) {
-        int reqLvl = data_skill_level(t);
-        int isLocked = gs->hero.level < reqLvl;
-        int chosen = gs->hero.skillChoices[t];
-        int hdrRow = 3 + (t - scrollTier) * 3;
-        if (hdrRow + 2 > 1 + maxRows) break;
-
-        wattron(w, COLOR_PAIR(isLocked ? CP_RED : CP_YELLOW));
-        mvwprintw(w, hdrRow, 2, "Lv%d:", reqLvl);
-        wattroff(w, COLOR_PAIR(isLocked ? CP_RED : CP_YELLOW));
-
-        for (int opt = 0; opt < 2; opt++) {
-            int idx = t * 2 + opt;
-            int row = hdrRow + 1 + opt;
-            int isSel = (idx == gs->menuIdx);
-            const SkillDef *sk = data_skill(gs->hero.classId, t, opt);
-
-            const char *pfx;
-            if (isSel)              pfx = "> ";
-            else if (chosen == opt) pfx = "* ";
-            else                    pfx = "  ";
-
-            if (isSel)
-                wattron(w, COLOR_PAIR(CP_SELECTED));
-            else if (isLocked)
-                wattron(w, COLOR_PAIR(CP_RED));
-            else if (chosen == opt)
-                wattron(w, COLOR_PAIR(CP_CYAN));
-            else if (chosen >= 0)
-                wattron(w, COLOR_PAIR(CP_DEFAULT));
-            else
-                wattron(w, COLOR_PAIR(CP_WHITE));
-
-            mvwprintw(w, row, 2, "%s%s", pfx, sk ? sk->name : "???");
-
-            if (isSel)
-                wattroff(w, COLOR_PAIR(CP_SELECTED));
-            else if (isLocked)
-                wattroff(w, COLOR_PAIR(CP_RED));
-            else if (chosen == opt)
-                wattroff(w, COLOR_PAIR(CP_CYAN));
-            else if (chosen >= 0)
-                wattroff(w, COLOR_PAIR(CP_DEFAULT));
-            else
-                wattroff(w, COLOR_PAIR(CP_WHITE));
-        }
-    }
-
-    int hasAny = 0;
-    for (int t = 0; t < MAX_SKILL_TIERS; t++)
-        if (gs->hero.skillChoices[t] >= 0) { hasAny = 1; break; }
-
-    wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 4, 2, "[Enter] Choose");
-    if (hasAny) {
-        int resetCost = gs->hero.level * gs->hero.level * 2;
-        int canReset = gs->hero.gold >= resetCost;
-        wattroff(w, COLOR_PAIR(CP_CYAN));
-        wattron(w, COLOR_PAIR(canReset ? CP_CYAN : CP_RED));
-        mvwprintw(w, PANEL_H - 3, 2, "[R] Reset %dg", resetCost);
-        wattroff(w, COLOR_PAIR(canReset ? CP_CYAN : CP_RED));
-        wattron(w, COLOR_PAIR(CP_CYAN));
-    }
-    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
-    wattroff(w, COLOR_PAIR(CP_CYAN));
-    wnoutrefresh(w);
-}
 
 static void render_achievements(GameState *gs) {
     WINDOW *w = gs->wLeft;
@@ -2237,6 +1968,222 @@ static void render_bulk_sell(GameState *gs) {
     wnoutrefresh(w);
 }
 
+static void render_talents_fullscreen(GameState *gs) {
+    WINDOW *w = gs->wLeft;
+    WINDOW *we = gs->wEnemy;
+    WINDOW *wl = gs->wLog;
+    werase(w); werase(we); werase(wl);
+    wnoutrefresh(w); wnoutrefresh(we); wnoutrefresh(wl);
+
+    Hero *h = &gs->hero;
+    int tree = gs->talentTreeIdx;
+    const TalentTreeDef *td = data_talent_tree(h->classId, tree);
+    if (!td) return;
+
+    WINDOW *fw = stdscr;
+    werase(fw);
+
+    static const int TIER_GATE[TALENT_TIERS] = { 0, 5, 10, 15, 20 };
+    static const int COL_X[3] = { 2, 28, 54 };
+    static const int COL_CENTER[3] = { 14, 40, 66 };
+    #define NODE_W 24
+
+    /* Row 0: point summary — distribution left, available right */
+    {
+        wattron(fw, COLOR_PAIR(CP_DEFAULT));
+        mvwprintw(fw, 0, 1, "(%d/%d/%d)",
+                  h->talentTreePoints[0], h->talentTreePoints[1], h->talentTreePoints[2]);
+        wattroff(fw, COLOR_PAIR(CP_DEFAULT));
+
+        wattron(fw, COLOR_PAIR(CP_GREEN) | A_BOLD);
+        char pts[16];
+        int plen = snprintf(pts, sizeof(pts), "Pts: %d", h->talentPoints);
+        mvwprintw(fw, 0, SCREEN_W - plen - 1, "%s", pts);
+        wattroff(fw, COLOR_PAIR(CP_GREEN) | A_BOLD);
+    }
+
+    /* Row 1: tab bar — [1/2/3] tree names, current highlighted */
+    for (int t = 0; t < NUM_TALENT_TREES; t++) {
+        const TalentTreeDef *tt = data_talent_tree(h->classId, t);
+        const char *tn = tt ? tt->name : "???";
+        int tc = tt ? tt->color : CP_DEFAULT;
+        if (t == tree) {
+            wattron(fw, COLOR_PAIR(tc) | A_BOLD);
+            mvwprintw(fw, 1, COL_X[t], "[%d] %s", t + 1, tn);
+            wattroff(fw, COLOR_PAIR(tc) | A_BOLD);
+        } else {
+            wattron(fw, COLOR_PAIR(tc));
+            mvwprintw(fw, 1, COL_X[t], " %d  %s", t + 1, tn);
+            wattroff(fw, COLOR_PAIR(tc));
+        }
+    }
+
+    /* Build tier→col→nodeIdx lookup */
+    int nodeAt[TALENT_TIERS][3];
+    memset(nodeAt, -1, sizeof(nodeAt));
+    for (int i = 0; i < td->nodeCount; i++) {
+        int ti = td->nodes[i].tier, co = td->nodes[i].col;
+        if (ti < TALENT_TIERS && co < 3) nodeAt[ti][co] = i;
+    }
+
+    int selNode = gs->talentNodeIdx;
+
+    /*
+     * Tree layout: 5 tiers with 3 rows each (node + connector + gate).
+     * Tier T occupies:
+     *   nodeRow  = 2 + T * 3       (the actual node cells)
+     *   connRow  = 2 + T * 3 + 1   (prereq vertical lines)
+     *   gateRow  = 2 + T * 3 + 2   (horizontal gate line "--- N ---")
+     * Tier 4 (last) has no connector/gate below it.
+     * Rows used: 2..16 (15 rows for 5 tiers).
+     */
+
+    /* Draw gate lines between tiers (rows 4, 7, 10, 13) */
+    for (int tier = 0; tier < TALENT_TIERS - 1; tier++) {
+        int gateRow = 2 + tier * 3 + 2;
+        int gatePts = TIER_GATE[tier + 1];
+        int met = (h->talentTreePoints[tree] >= gatePts);
+        int gateColor = met ? CP_DEFAULT : CP_RED;
+
+        char label[8];
+        int llen = snprintf(label, sizeof(label), " %d ", gatePts);
+        int lx = (SCREEN_W - llen) / 2;
+
+        wattron(fw, COLOR_PAIR(gateColor));
+        for (int x = 4; x < SCREEN_W - 4; x++) {
+            if (x >= lx && x < lx + llen)
+                mvwaddch(fw, gateRow, x, (chtype)label[x - lx]);
+            else
+                mvwaddch(fw, gateRow, x, ACS_HLINE);
+        }
+        wattroff(fw, COLOR_PAIR(gateColor));
+    }
+
+    /* Draw prereq connectors on connector rows (rows 3, 6, 9, 12) */
+    for (int i = 0; i < td->nodeCount; i++) {
+        const TalentNodeDef *nd = &td->nodes[i];
+        if (nd->prereqNode < 0) continue;
+        const TalentNodeDef *pre = &td->nodes[nd->prereqNode];
+        int srcCol = pre->col, dstCol = nd->col;
+        int connRow = 2 + pre->tier * 3 + 1;
+        int preRanks = h->talentRanks[tree][nd->prereqNode];
+        int lineColor = (preRanks >= pre->maxRank) ? CP_GREEN : CP_DEFAULT;
+
+        wattron(fw, COLOR_PAIR(lineColor));
+        if (srcCol == dstCol) {
+            mvwaddch(fw, connRow, COL_CENTER[srcCol], ACS_VLINE);
+        } else {
+            int x1 = COL_CENTER[srcCol], x2 = COL_CENTER[dstCol];
+            int lo = x1 < x2 ? x1 : x2, hi = x1 > x2 ? x1 : x2;
+            mvwaddch(fw, connRow, x1, (x1 < x2) ? ACS_LLCORNER : ACS_LRCORNER);
+            for (int x = lo + 1; x < hi; x++)
+                mvwaddch(fw, connRow, x, ACS_HLINE);
+            mvwaddch(fw, connRow, x2, (x2 > x1) ? ACS_URCORNER : ACS_ULCORNER);
+        }
+        wattroff(fw, COLOR_PAIR(lineColor));
+    }
+
+    /* Draw node cells */
+    for (int tier = 0; tier < TALENT_TIERS; tier++) {
+        int nodeRow = 2 + tier * 3;
+        for (int c = 0; c < 3; c++) {
+            int idx = nodeAt[tier][c];
+            if (idx < 0) continue;
+            const TalentNodeDef *nd = &td->nodes[idx];
+            int ranks = h->talentRanks[tree][idx];
+            int canInvest = hero_can_invest_talent(h, tree, idx);
+            int isSel = (idx == selNode);
+
+            int nodeColor;
+            if (ranks >= nd->maxRank) nodeColor = CP_CYAN;
+            else if (ranks > 0)       nodeColor = CP_GREEN;
+            else if (canInvest)        nodeColor = CP_WHITE;
+            else                       nodeColor = CP_DEFAULT;
+
+            if (isSel) wattron(fw, COLOR_PAIR(sel_color(nodeColor)));
+            else        wattron(fw, COLOR_PAIR(nodeColor));
+
+            char cell[NODE_W + 1];
+            snprintf(cell, sizeof(cell), " %c%-16.16s %d/%d",
+                     nd->isActive ? '*' : ' ', nd->name, ranks, nd->maxRank);
+            mvwprintw(fw, nodeRow, COL_X[c], "%-*.*s", NODE_W, NODE_W, cell);
+
+            if (isSel) wattroff(fw, COLOR_PAIR(sel_color(nodeColor)));
+            else        wattroff(fw, COLOR_PAIR(nodeColor));
+        }
+    }
+
+    /* Detail panel (rows 16-19) */
+    for (int x = 1; x < SCREEN_W - 1; x++)
+        mvwaddch(fw, 16, x, ACS_HLINE | COLOR_PAIR(CP_DEFAULT));
+
+    if (selNode >= 0 && selNode < td->nodeCount) {
+        const TalentNodeDef *nd = &td->nodes[selNode];
+        int ranks = h->talentRanks[tree][selNode];
+
+        /* Row 17: name + type */
+        wattron(fw, COLOR_PAIR(CP_WHITE) | A_BOLD);
+        mvwprintw(fw, 17, 2, "%s", nd->name);
+        wattroff(fw, COLOR_PAIR(CP_WHITE) | A_BOLD);
+        if (nd->isActive) {
+            wattron(fw, COLOR_PAIR(CP_YELLOW));
+            wprintw(fw, " (Active)");
+            wattroff(fw, COLOR_PAIR(CP_YELLOW));
+        }
+
+        /* Row 18: description + skill info */
+        wattron(fw, COLOR_PAIR(CP_DEFAULT));
+        mvwprintw(fw, 18, 2, "%s", nd->desc);
+        wattroff(fw, COLOR_PAIR(CP_DEFAULT));
+        if (nd->isActive) {
+            const SkillDef *sk = data_talent_skill(h->classId, tree, selNode);
+            if (sk) {
+                const ClassDef *cd = data_class(h->classId);
+                wattron(fw, COLOR_PAIR(CP_YELLOW));
+                mvwprintw(fw, 18, 54, "CD:%d %s:%d",
+                          sk->cooldown, cd ? cd->resourceName : "Res", sk->resourceCost);
+                wattroff(fw, COLOR_PAIR(CP_YELLOW));
+            }
+        }
+
+        /* Row 19: rank progress + bonus values */
+        wattron(fw, COLOR_PAIR(CP_WHITE));
+        mvwprintw(fw, 19, 2, "Rank: %d/%d", ranks, nd->maxRank);
+        wattroff(fw, COLOR_PAIR(CP_WHITE));
+        if (!nd->isActive) {
+            int bx = 16;
+            for (int b = 0; b < MAX_TALENT_BONUSES; b++) {
+                if (nd->bonus[b].type == TB_NONE) continue;
+                int val = nd->bonus[b].perRank;
+                int cur = val * ranks;
+                int total = val * nd->maxRank;
+                wattron(fw, COLOR_PAIR(CP_GREEN));
+                bx += snprintf(NULL, 0, "  %+d / %+d", cur, total);
+                mvwprintw(fw, 19, bx - snprintf(NULL, 0, "  %+d / %+d", cur, total),
+                          "  %+d / %+d", cur, total);
+                wattroff(fw, COLOR_PAIR(CP_GREEN));
+            }
+        }
+        if (nd->prereqNode >= 0) {
+            const TalentNodeDef *pre = &td->nodes[nd->prereqNode];
+            int preRanks = h->talentRanks[tree][nd->prereqNode];
+            int preMet = (preRanks >= pre->maxRank);
+            wattron(fw, COLOR_PAIR(preMet ? CP_GREEN : CP_RED));
+            mvwprintw(fw, 19, 48, "Req: %s %s",
+                      pre->name, preMet ? "(OK)" : "(!)");
+            wattroff(fw, COLOR_PAIR(preMet ? CP_GREEN : CP_RED));
+        }
+    }
+
+    /* Row 21: controls */
+    wattron(fw, COLOR_PAIR(CP_CYAN));
+    mvwprintw(fw, 21, 2, "[Arrows]Move [Enter]+1 [Bksp]-1 [R]Reset [Tab]Tree [Esc]Back");
+    wattroff(fw, COLOR_PAIR(CP_CYAN));
+
+    wnoutrefresh(fw);
+    #undef NODE_W
+}
+
 static void render_enemy_panel(GameState *gs) {
     if (gs->offlineShowUntil > (int64_t)time(NULL) && gs->screen == SCR_MAIN) {
         WINDOW *w = gs->wEnemy;
@@ -2264,14 +2211,6 @@ static void render_enemy_panel(GameState *gs) {
     }
     if (gs->screen == SCR_ACHIEVEMENTS) {
         render_achievement_detail(gs);
-        return;
-    }
-    if (gs->screen == SCR_SKILLS) {
-        render_skill_detail(gs);
-        return;
-    }
-    if (gs->screen == SCR_CHARACTER) {
-        render_stat_detail(gs);
         return;
     }
     if (gs->screen == SCR_EQUIPMENT) {
@@ -2471,6 +2410,12 @@ static void render_log_panel(GameState *gs) {
 }
 
 void ui_render(GameState *gs) {
+    if (gs->screen == SCR_TALENTS) {
+        render_talents_fullscreen(gs);
+        doupdate();
+        return;
+    }
+
     render_header(gs);
 
     switch (gs->screen) {
@@ -2483,7 +2428,6 @@ void ui_render(GameState *gs) {
     case SCR_EQUIPMENT:    render_equipment(gs);     break;
     case SCR_SHOP:         render_shop(gs);          break;
     case SCR_CHARACTER:    render_character(gs);     break;
-    case SCR_SKILLS:       render_skills(gs);        break;
     case SCR_CONFIRM_QUIT: render_confirm_quit(gs);  break;
     case SCR_ENCYCLOPEDIA:  render_encyclopedia(gs);   break;
     case SCR_ENCY_CLASSES:  render_ency_classes(gs);  break;
@@ -2498,6 +2442,7 @@ void ui_render(GameState *gs) {
     case SCR_ACHIEVEMENTS:  render_achievements(gs);   break;
     case SCR_TITLES:        render_titles(gs);         break;
     case SCR_BULK_SELL:     render_bulk_sell(gs);      break;
+    default: break;
     }
 
     render_enemy_panel(gs);
@@ -2597,7 +2542,7 @@ void ui_handle_key(GameState *gs, int ch) {
             switch (gs->menuIdx) {
             case 0: gs->screen = SCR_DUNGEON;      gs->menuIdx = 0; break;
             case 1: gs->screen = SCR_CHARACTER;     gs->menuIdx = 0; break;
-            case 2: gs->screen = SCR_SKILLS;        gs->menuIdx = 0; break;
+            case 2: gs->screen = SCR_TALENTS;       gs->talentTreeIdx = 0; gs->talentNodeIdx = 0; break;
             case 3: gs->screen = SCR_EQUIPMENT;     gs->menuIdx = 0; break;
             case 4: gs->screen = SCR_SHOP;          gs->menuIdx = 0; gs->shopSlot = 0; break;
             case 5: gs->screen = SCR_ENCYCLOPEDIA;  gs->menuIdx = 0; break;
@@ -2813,58 +2758,9 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_CHARACTER:
-        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = NUM_STATS - 1; }
-        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= NUM_STATS) gs->menuIdx = 0; }
-        if (ch == '\n' || ch == KEY_ENTER) {
-            if (gs->hero.talentPoints <= 0) {
-                ui_log(gs, "No talent points available.", CP_RED);
-            } else if (hero_alloc_talent(&gs->hero, gs->menuIdx)) {
-                char b[LOG_LINE_W + 1];
-                snprintf(b, sizeof(b), "+1 %s! (%d pts left)",
-                         data_stat_name(gs->menuIdx), gs->hero.talentPoints);
-                ui_log(gs, b, CP_GREEN);
-                check_achievements(gs);
-            }
-        }
         if (ch == 't' || ch == 'T') { gs->screen = SCR_TITLES; gs->menuIdx = gs->hero.activeTitle; }
         if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 1; }
         break;
-
-    case SCR_SKILLS: {
-        int total = MAX_SKILL_TIERS * 2;
-        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = total - 1; }
-        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= total) gs->menuIdx = 0; }
-        if (ch == '\n' || ch == KEY_ENTER) {
-            int tier = gs->menuIdx / 2;
-            int option = gs->menuIdx % 2;
-            if (gs->hero.level >= data_skill_level(tier) && gs->hero.skillChoices[tier] < 0) {
-                gs->hero.skillChoices[tier] = option;
-                const SkillDef *sk = data_skill(gs->hero.classId, tier, option);
-                if (sk) {
-                    char b[LOG_LINE_W + 1];
-                    snprintf(b, sizeof(b), "Learned %s!", sk->name);
-                    ui_log(gs, b, CP_GREEN);
-                }
-            }
-        }
-        if (ch == 'r' || ch == 'R') {
-            int hasAny = 0;
-            for (int t = 0; t < MAX_SKILL_TIERS; t++)
-                if (gs->hero.skillChoices[t] >= 0) { hasAny = 1; break; }
-            int resetCost = gs->hero.level * gs->hero.level * 2;
-            if (hasAny && gs->hero.gold >= resetCost) {
-                gs->hero.gold -= resetCost;
-                for (int t = 0; t < MAX_SKILL_TIERS; t++)
-                    gs->hero.skillChoices[t] = -1;
-                memset(gs->hero.skillCooldowns, 0, sizeof(gs->hero.skillCooldowns));
-                char rbuf[LOG_LINE_W + 1];
-                snprintf(rbuf, sizeof(rbuf), "Skills reset! (-%dG)", resetCost);
-                ui_log(gs, rbuf, CP_YELLOW);
-            }
-        }
-        if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 2; }
-        break;
-    }
 
     case SCR_CONFIRM_QUIT:
         if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 1; }
@@ -2998,6 +2894,104 @@ void ui_handle_key(GameState *gs, int ch) {
             }
         }
         if (ch == 27) { gs->screen = SCR_CHARACTER; gs->menuIdx = 0; }
+        break;
+    }
+
+    case SCR_TALENTS: {
+        int tree = gs->talentTreeIdx;
+        const TalentTreeDef *td = data_talent_tree(gs->hero.classId, tree);
+        if (!td) break;
+        int cur = gs->talentNodeIdx;
+        const TalentNodeDef *cnd = (cur >= 0 && cur < td->nodeCount) ? &td->nodes[cur] : NULL;
+        int curTier = cnd ? cnd->tier : 0;
+        int curCol = cnd ? cnd->col : 0;
+
+        /* L/R: move between columns in the same tier */
+        if (ch == KEY_LEFT) {
+            for (int nc = curCol - 1; nc >= 0; nc--) {
+                for (int i = 0; i < td->nodeCount; i++)
+                    if (td->nodes[i].tier == curTier && td->nodes[i].col == nc)
+                        { gs->talentNodeIdx = i; goto nav_done; }
+            }
+        }
+        if (ch == KEY_RIGHT) {
+            for (int nc = curCol + 1; nc < 3; nc++) {
+                for (int i = 0; i < td->nodeCount; i++)
+                    if (td->nodes[i].tier == curTier && td->nodes[i].col == nc)
+                        { gs->talentNodeIdx = i; goto nav_done; }
+            }
+        }
+        /* Up/Down: move to closest node in adjacent tier, preferring same column */
+        if (ch == KEY_UP) {
+            int bestNode = -1, bestDist = 999;
+            for (int i = 0; i < td->nodeCount; i++) {
+                if (td->nodes[i].tier == curTier - 1) {
+                    int dist = abs(td->nodes[i].col - curCol);
+                    if (dist < bestDist) { bestDist = dist; bestNode = i; }
+                }
+            }
+            if (bestNode >= 0) gs->talentNodeIdx = bestNode;
+        }
+        if (ch == KEY_DOWN) {
+            int bestNode = -1, bestDist = 999;
+            for (int i = 0; i < td->nodeCount; i++) {
+                if (td->nodes[i].tier == curTier + 1) {
+                    int dist = abs(td->nodes[i].col - curCol);
+                    if (dist < bestDist) { bestDist = dist; bestNode = i; }
+                }
+            }
+            if (bestNode >= 0) gs->talentNodeIdx = bestNode;
+        }
+        nav_done:
+        /* Tab: cycle to next tree */
+        if (ch == '\t') {
+            gs->talentTreeIdx = (gs->talentTreeIdx + 1) % NUM_TALENT_TREES;
+            gs->talentNodeIdx = 0;
+        }
+        /* 1/2/3: jump directly to a tree */
+        if (ch >= '1' && ch <= '3') {
+            int t = ch - '1';
+            if (t != gs->talentTreeIdx) {
+                gs->talentTreeIdx = t;
+                gs->talentNodeIdx = 0;
+            }
+        }
+        if (ch == '\n' || ch == KEY_ENTER) {
+            tree = gs->talentTreeIdx;
+            if (hero_invest_talent(&gs->hero, tree, gs->talentNodeIdx)) {
+                const TalentNodeDef *nd = data_talent_node(gs->hero.classId, tree, gs->talentNodeIdx);
+                char b[LOG_LINE_W + 1];
+                snprintf(b, sizeof(b), "+1 %s (%d pts left)", nd ? nd->name : "?", gs->hero.talentPoints);
+                ui_log(gs, b, CP_GREEN);
+            }
+        }
+        if (ch == KEY_BACKSPACE || ch == 127 || ch == 8) {
+            tree = gs->talentTreeIdx;
+            if (hero_uninvest_talent(&gs->hero, tree, gs->talentNodeIdx)) {
+                const TalentNodeDef *nd = data_talent_node(gs->hero.classId, tree, gs->talentNodeIdx);
+                char b[LOG_LINE_W + 1];
+                snprintf(b, sizeof(b), "-1 %s (%d pts left)", nd ? nd->name : "?", gs->hero.talentPoints);
+                ui_log(gs, b, CP_YELLOW);
+            }
+        }
+        if (ch == 'r' || ch == 'R') {
+            int spent = hero_total_talent_points_spent(&gs->hero);
+            if (spent > 0) {
+                int resetCost = gs->hero.level * gs->hero.level * 2;
+                if (gs->hero.gold >= resetCost) {
+                    gs->hero.gold -= resetCost;
+                    hero_reset_talents(&gs->hero);
+                    char rbuf[LOG_LINE_W + 1];
+                    snprintf(rbuf, sizeof(rbuf), "Talents reset! (-%dG)", resetCost);
+                    ui_log(gs, rbuf, CP_YELLOW);
+                }
+            }
+        }
+        if (ch == 27) {
+            gs->screen = SCR_MAIN;
+            gs->menuIdx = 2;
+            gs->needsRender = 1;
+        }
         break;
     }
 

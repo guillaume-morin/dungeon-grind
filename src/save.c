@@ -27,7 +27,8 @@
 #endif
 
 #define SAVE_MAGIC  0x44475256  /* "DGRV" */
-#define SAVE_VER    8
+#define SAVE_VER    9
+#define SAVE_VER_OLD 8
 
 /* Return platform-specific save directory: ~/.dungeon-grind or %APPDATA%\.dungeon-grind. */
 static const char *save_dir(void) {
@@ -84,10 +85,34 @@ int load_game(GameState *gs) {
 
     unsigned int magic, ver;
     if (fread(&magic, sizeof(magic), 1, f) != 1 || magic != SAVE_MAGIC) { fclose(f); return 0; }
-    if (fread(&ver,   sizeof(ver),   1, f) != 1 || ver   != SAVE_VER)  { fclose(f); return 0; }
+    if (fread(&ver,   sizeof(ver),   1, f) != 1)                        { fclose(f); return 0; }
+    if (ver != SAVE_VER && ver != SAVE_VER_OLD)                          { fclose(f); return 0; }
 
     Hero loaded;
-    if (fread(&loaded, sizeof(Hero), 1, f) != 1) { fclose(f); return 0; }
+    memset(&loaded, 0, sizeof(Hero));
+
+    if (ver == SAVE_VER) {
+        if (fread(&loaded, sizeof(Hero), 1, f) != 1) { fclose(f); return 0; }
+    } else {
+        long dataStart = ftell(f);
+        if (fread(&loaded, sizeof(Hero), 1, f) != 1) {
+            fseek(f, dataStart, SEEK_SET);
+            fread(&loaded, 1, sizeof(Hero) - sizeof(loaded.talentRanks) - sizeof(loaded.talentTreePoints) - sizeof(loaded.activeSkillCooldowns), f);
+        }
+        int refunded = 0;
+        for (int i = 0; i < NUM_STATS; i++) {
+            refunded += loaded.talents[i];
+            loaded.talents[i] = 0;
+        }
+        loaded.talentPoints += refunded;
+        for (int i = 0; i < MAX_SKILL_TIERS; i++) {
+            loaded.skillChoices[i] = -1;
+            loaded.skillCooldowns[i] = 0;
+        }
+        memset(loaded.talentRanks, 0, sizeof(loaded.talentRanks));
+        memset(loaded.talentTreePoints, 0, sizeof(loaded.talentTreePoints));
+        memset(loaded.activeSkillCooldowns, 0, sizeof(loaded.activeSkillCooldowns));
+    }
     gs->hero = loaded;
 
     if (fread(&gs->currentDungeon, sizeof(int), 1, f) != 1) gs->currentDungeon = 0;
@@ -165,10 +190,11 @@ void save_refresh_slots(GameState *gs) {
 
         unsigned int magic, ver;
         if (fread(&magic, sizeof(magic), 1, f) != 1 || magic != SAVE_MAGIC) { fclose(f); continue; }
-        if (fread(&ver,   sizeof(ver),   1, f) != 1 || ver   != SAVE_VER)   { fclose(f); continue; }
+        if (fread(&ver,   sizeof(ver),   1, f) != 1 || (ver != SAVE_VER && ver != SAVE_VER_OLD)) { fclose(f); continue; }
 
         Hero h;
-        if (fread(&h, sizeof(Hero), 1, f) != 1) { fclose(f); continue; }
+        memset(&h, 0, sizeof(Hero));
+        if (fread(&h, sizeof(Hero), 1, f) < 1 && ver == SAVE_VER) { fclose(f); continue; }
 
          info->exists  = 1;
         strncpy(info->name, h.name, MAX_NAME - 1);
