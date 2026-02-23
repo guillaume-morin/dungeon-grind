@@ -2558,68 +2558,11 @@ static void render_log_panel(GameState *gs) {
         return;
     }
 
-    int logStartRow = 1;
-    int maxLogLines = LOG_H - 2;
-
-    if (gs->heroCreated && gs->inDungeon) {
-        Hero *h = &gs->hero;
-        const ClassDef *cd = data_class(h->classId);
-        EStats es = hero_effective_stats(h);
-
-        wattron(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-        mvwprintw(w, 1, 2, "%-20.20s", h->name);
-        wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, 1, 24, "Lv.%d %s", h->level, cd->name);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-
-        wattron(w, COLOR_PAIR(CP_RED));
-        mvwprintw(w, 2, 2, "HP");
-        wattroff(w, COLOR_PAIR(CP_RED));
-        draw_bar(w, 2, 5, 20, h->hp, es.maxHp, CP_RED, CP_DEFAULT);
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, 2, 26, "%d/%d", h->hp, es.maxHp);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-
-        int resColor = (h->classId == CLASS_WARRIOR) ? CP_RED :
-                       (h->classId == CLASS_ROGUE)   ? CP_YELLOW : CP_BLUE;
-        wattron(w, COLOR_PAIR(resColor));
-        mvwprintw(w, 3, 2, "%-2.2s", cd->resourceName);
-        wattroff(w, COLOR_PAIR(resColor));
-        draw_bar(w, 3, 5, 20, h->resource, h->maxResource, resColor, CP_DEFAULT);
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, 3, 26, "%d/%d", h->resource, h->maxResource);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, 4, 2, "DMG:%d DR:%d%% SPD:%dms Crit:%.0f%%",
-                  es.damage, (int)(es.dmgReduction * 100), es.tickRate,
-                  es.critChance * 100);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-
-        wattron(w, COLOR_PAIR(CP_GREEN));
-        mvwprintw(w, 5, 2, "XP");
-        wattroff(w, COLOR_PAIR(CP_GREEN));
-        float xpPct = hero_xp_pct(h);
-        draw_bar(w, 5, 5, 15, (int)(xpPct * 100), 100, CP_GREEN, CP_DEFAULT);
-        wattron(w, COLOR_PAIR(CP_WHITE));
-        mvwprintw(w, 5, 21, "%.0f%%", xpPct * 100);
-        wattroff(w, COLOR_PAIR(CP_WHITE));
-        wattron(w, COLOR_PAIR(CP_YELLOW));
-        mvwprintw(w, 5, 28, "Gold:%d", h->gold);
-        wattroff(w, COLOR_PAIR(CP_YELLOW));
-
-        mvwhline(w, 6, 1, ACS_HLINE, RIGHT_W - 2);
-
-        logStartRow = 7;
-        maxLogLines = LOG_H - 8;
-    }
-
-    int start = gs->logCount - maxLogLines;
+    int start = gs->logCount - (LOG_H - 2);
     if (start < 0) start = 0;
 
     for (int i = start; i < gs->logCount; i++) {
-        int row = logStartRow + (i - start);
+        int row = 1 + (i - start);
         if (row >= LOG_H - 1) break;
         LogLine *l = &gs->log[i];
         wattron(w, COLOR_PAIR(l->color));
