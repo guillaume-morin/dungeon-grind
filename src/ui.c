@@ -1932,17 +1932,8 @@ static void render_bulk_sell(GameState *gs) {
                                   "Sell below Epic", "Sell below Legendary" };
     const char *thLabels[] = { "< Uncommon", "< Rare", "< Epic", "< Legendary" };
 
-    int firstRow = 4;
-    int lastRow = PANEL_H - 4;
-    int maxVis = (lastRow - firstRow + 1) / 3;
-    if (maxVis < 1) maxVis = 1;
-
-    int scroll = 0;
-    if (gs->menuIdx >= scroll + maxVis) scroll = gs->menuIdx - maxVis + 1;
-    if (gs->menuIdx < scroll) scroll = gs->menuIdx;
-
-    int row = firstRow;
-    for (int i = scroll; i < BULK_MENU_N && row + 1 <= lastRow; i++) {
+    int row = 4;
+    for (int i = 0; i < BULK_MENU_N; i++) {
         int sel = (i == gs->menuIdx);
 
         if (i < 4) {
@@ -1985,17 +1976,6 @@ static void render_bulk_sell(GameState *gs) {
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
         row += 3;
-    }
-
-    if (scroll > 0) {
-        wattron(w, COLOR_PAIR(CP_DEFAULT));
-        mvwprintw(w, firstRow - 1, LEFT_W - 4, " ^ ");
-        wattroff(w, COLOR_PAIR(CP_DEFAULT));
-    }
-    if (scroll + maxVis < BULK_MENU_N) {
-        wattron(w, COLOR_PAIR(CP_DEFAULT));
-        mvwprintw(w, lastRow + 1, LEFT_W - 4, " v ");
-        wattroff(w, COLOR_PAIR(CP_DEFAULT));
     }
 
     wattron(w, COLOR_PAIR(CP_CYAN));
