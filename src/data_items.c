@@ -375,34 +375,34 @@ static const ItemDef ITEMS[] = {
     { "Void Aegis Pendant",SLOT_AMULET, RARITY_EPIC,       78, 60000, { 4,4,4,4,18,16,0}, CM_ALL },
     { "Void Gale Locket", SLOT_AMULET,  RARITY_EPIC,       78, 60000, { 5,5,5,5,6,0,18}, CM_ALL },
 
-    /* ── Legendary weapons ── */
-    { "Eternity's Edge",  SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, {110,0,0,0,35,20,0}, CM_WAR },
-    { "Eternal Whisper",  SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, {18,110,0,0,0,0,35}, CM_ROG },
-    { "Staff of Ages",    SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, { 0,0,110,35,0,0,18}, CM_MAG },
-    { "Eternal Grace",    SLOT_WEAPON,  RARITY_LEGENDARY,  90,250000, { 0,0,35,110,20,0,0}, CM_PRI },
+    /* ── Legendary weapons (D8 boss exclusive, levelReq 99) ── */
+    { "Eternity's Edge",  SLOT_WEAPON,  RARITY_LEGENDARY,  99,250000, {110,0,0,0,35,20,0}, CM_WAR },
+    { "Eternal Whisper",  SLOT_WEAPON,  RARITY_LEGENDARY,  99,250000, {18,110,0,0,0,0,35}, CM_ROG },
+    { "Staff of Ages",    SLOT_WEAPON,  RARITY_LEGENDARY,  99,250000, { 0,0,110,35,0,0,18}, CM_MAG },
+    { "Eternal Grace",    SLOT_WEAPON,  RARITY_LEGENDARY,  99,250000, { 0,0,35,110,20,0,0}, CM_PRI },
     /* ── Legendary helmets ── */
-    { "Helm of Ages",     SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, {14,0,0,0,38,46,0}, CM_WAR },
-    { "Timeless Hood",    SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, { 0,35,0,0,16,0,28}, CM_ROG },
-    { "Crown of Aeons",   SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, { 0,0,46,24,9,0,0}, CM_MAG },
-    { "Eternal Aureole",  SLOT_HELMET,  RARITY_LEGENDARY,  90,160000, { 0,0,0,38,25,20,0}, CM_PRI },
+    { "Helm of Ages",     SLOT_HELMET,  RARITY_LEGENDARY,  99,160000, {14,0,0,0,38,46,0}, CM_WAR },
+    { "Timeless Hood",    SLOT_HELMET,  RARITY_LEGENDARY,  99,160000, { 0,35,0,0,16,0,28}, CM_ROG },
+    { "Crown of Aeons",   SLOT_HELMET,  RARITY_LEGENDARY,  99,160000, { 0,0,46,24,9,0,0}, CM_MAG },
+    { "Eternal Aureole",  SLOT_HELMET,  RARITY_LEGENDARY,  99,160000, { 0,0,0,38,25,20,0}, CM_PRI },
     /* ── Legendary chests ── */
-    { "Armor of Eternity",SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, {22,0,0,0,58,70,0}, CM_WAR },
-    { "Timeless Garb",    SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, { 0,54,0,0,24,0,44}, CM_ROG },
-    { "Robe of Aeons",    SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, { 0,0,70,36,14,0,0}, CM_MAG },
-    { "Eternal Vestment", SLOT_CHEST,   RARITY_LEGENDARY,  90,200000, { 0,0,0,58,38,30,0}, CM_PRI },
+    { "Armor of Eternity",SLOT_CHEST,   RARITY_LEGENDARY,  99,200000, {22,0,0,0,58,70,0}, CM_WAR },
+    { "Timeless Garb",    SLOT_CHEST,   RARITY_LEGENDARY,  99,200000, { 0,54,0,0,24,0,44}, CM_ROG },
+    { "Robe of Aeons",    SLOT_CHEST,   RARITY_LEGENDARY,  99,200000, { 0,0,70,36,14,0,0}, CM_MAG },
+    { "Eternal Vestment", SLOT_CHEST,   RARITY_LEGENDARY,  99,200000, { 0,0,0,58,38,30,0}, CM_PRI },
     /* ── Legendary legs ── */
-    { "Greaves of Ages",  SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, {18,0,0,0,46,56,0}, CM_WAR },
-    { "Timeless Legwraps",SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, { 0,44,0,0,20,0,36}, CM_ROG },
-    { "Leggings of Aeons",SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, { 0,0,56,28,12,0,0}, CM_MAG },
-    { "Eternal Greaves",  SLOT_LEGS,    RARITY_LEGENDARY,  90,140000, { 0,0,0,46,30,24,0}, CM_PRI },
+    { "Greaves of Ages",  SLOT_LEGS,    RARITY_LEGENDARY,  99,140000, {18,0,0,0,46,56,0}, CM_WAR },
+    { "Timeless Legwraps",SLOT_LEGS,    RARITY_LEGENDARY,  99,140000, { 0,44,0,0,20,0,36}, CM_ROG },
+    { "Leggings of Aeons",SLOT_LEGS,    RARITY_LEGENDARY,  99,140000, { 0,0,56,28,12,0,0}, CM_MAG },
+    { "Eternal Greaves",  SLOT_LEGS,    RARITY_LEGENDARY,  99,140000, { 0,0,0,46,30,24,0}, CM_PRI },
     /* ── Legendary boots ── */
-    { "Boots of Eternity",SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,0,0,0,24,30,26}, CM_WAR },
-    { "Timeless Stride",  SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,26,0,0,14,0,40}, CM_ROG },
-    { "Steps of Aeons",   SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,0,26,18,0,0,30}, CM_MAG },
-    { "Eternal Striders", SLOT_BOOTS,   RARITY_LEGENDARY,  90,125000, { 0,0,0,26,20,0,26}, CM_PRI },
+    { "Boots of Eternity",SLOT_BOOTS,   RARITY_LEGENDARY,  99,125000, { 0,0,0,0,24,30,26}, CM_WAR },
+    { "Timeless Stride",  SLOT_BOOTS,   RARITY_LEGENDARY,  99,125000, { 0,26,0,0,14,0,40}, CM_ROG },
+    { "Steps of Aeons",   SLOT_BOOTS,   RARITY_LEGENDARY,  99,125000, { 0,0,26,18,0,0,30}, CM_MAG },
+    { "Eternal Striders", SLOT_BOOTS,   RARITY_LEGENDARY,  99,125000, { 0,0,0,26,20,0,26}, CM_PRI },
     /* ── Legendary jewelry ── */
-    { "Eternal Band",     SLOT_RING,    RARITY_LEGENDARY,  90,180000, {15,15,15,15,0,0,0}, CM_ALL },
-    { "Eternal Charm",    SLOT_AMULET,  RARITY_LEGENDARY,  90,180000, { 0,0,16,16,22,12,0}, CM_ALL }
+    { "Eternal Band",     SLOT_RING,    RARITY_LEGENDARY,  99,180000, {15,15,15,15,0,0,0}, CM_ALL },
+    { "Eternal Charm",    SLOT_AMULET,  RARITY_LEGENDARY,  99,180000, { 0,0,16,16,22,12,0}, CM_ALL }
 };
 
 static const int NUM_ITEMS_TOTAL = sizeof(ITEMS) / sizeof(ITEMS[0]);
