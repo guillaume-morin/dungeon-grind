@@ -63,6 +63,7 @@ EStats hero_effective_stats(const Hero *h) {
     int talFlatHp = 0, talFlatCrit = 0, talFlatDodge = 0, talFlatBlock = 0, talFlatDR = 0;
     int pctPhysDmg=0, pctSpellDmg=0, pctHeal=0, pctHp=0, pctCritDmg=0;
     int pctDodge=0, pctArmor=0, pctAtkSpd=0, pctXp=0, pctGold=0;
+    int pctStat[NUM_STATS] = {0};
 
     for (int t = 0; t < NUM_TALENT_TREES; t++) {
         const TalentTreeDef *td = data_talent_tree(h->classId, t);
@@ -97,6 +98,12 @@ EStats hero_effective_stats(const Hero *h) {
                 case TB_PCT_ATKSPD:    pctAtkSpd    += val; break;
                 case TB_PCT_XP:        pctXp        += val; break;
                 case TB_PCT_GOLD:      pctGold      += val; break;
+                case TB_PCT_STR: pctStat[STR] += val; break;
+                case TB_PCT_AGI: pctStat[AGI] += val; break;
+                case TB_PCT_INT: pctStat[INT_]+= val; break;
+                case TB_PCT_WIS: pctStat[WIS] += val; break;
+                case TB_PCT_VIT: pctStat[VIT] += val; break;
+                case TB_PCT_DEF: pctStat[DEF] += val; break;
                 }
             }
         }
@@ -113,6 +120,11 @@ EStats hero_effective_stats(const Hero *h) {
 
         es.stats[i] = base + oldTal + talFlat[i] + eq;
     }
+
+    /* Apply % stat talents — scales with equipment, applied before deriving combat stats */
+    for (int i = 0; i < NUM_STATS; i++)
+        if (pctStat[i] > 0)
+            es.stats[i] = es.stats[i] * (100 + pctStat[i]) / 100;
 
     int pri = es.stats[cd->primaryStat];
     es.maxHp = cd->baseHp + es.stats[VIT] * 5 + es.stats[STR] * 2 + talFlatHp;
