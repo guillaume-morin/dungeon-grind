@@ -479,11 +479,12 @@ int                 data_skill_level(int tier);
 
 const AchievementDef *data_achievement(int id);
 const TitleDef       *data_title(int id);
-const char           *data_affix_name(int id);
+const char         *data_affix_name(int id);
 const ClassTalentDef *data_class_talents(int classId);
 const TalentTreeDef  *data_talent_tree(int classId, int tree);
 const TalentNodeDef  *data_talent_node(int classId, int tree, int node);
 const SkillDef       *data_talent_skill(int classId, int tree, int node);
+const char        **data_class_art(int classId);
 
 void    check_achievements(GameState *gs);
 

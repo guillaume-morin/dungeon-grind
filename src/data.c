@@ -124,3 +124,39 @@ static const char *AFFIX_NAMES[NUM_AFFIXES] = {
 const char *data_affix_name(int id) {
     return (id >= 0 && id < NUM_AFFIXES) ? AFFIX_NAMES[id] : "?";
 }
+
+static const char *CLASS_ART[NUM_CLASSES][ART_LINES] = {
+    [CLASS_WARRIOR] = {
+        "  __        __  ",
+        "  \\ \\______/ /  ",
+        "   \\  o  o  /   ",
+        "    |  __  |    ",
+        "     \\/  \\/     "
+    },
+    [CLASS_ROGUE] = {
+        "    /\\    /\\    ",
+        "   {  '--'  }   ",
+        "   {  o  o  }   ",
+        "    \\  ==  /    ",
+        "     '----'     "
+    },
+    [CLASS_MAGE] = {
+        "   /~~----~~\\   ",
+        "  ( (O)  (O) )  ",
+        "   \\   __   /   ",
+        "    \\  --  /    ",
+        "     '----'     "
+    },
+    [CLASS_PRIEST] = {
+        "     ()  ()     ",
+        "     |\\  /|     ",
+        "    ( o  o )    ",
+        "     \\ -- /     ",
+        "      '  '      "
+    }
+};
+
+const char **data_class_art(int classId) {
+    if (classId < 0 || classId >= NUM_CLASSES) return NULL;
+    return (const char **)CLASS_ART[classId];
+}
