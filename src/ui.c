@@ -1965,20 +1965,25 @@ static void render_bulk_sell(GameState *gs) {
     if (sel4) wattron(w, COLOR_PAIR(CP_SELECTED));
     else if (asOn) wattron(w, COLOR_PAIR(CP_GREEN));
     else wattron(w, COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, row, 1, "%s%-23.23s %s", sel4 ? " > " : "   ",
-              "Auto-sell", asOn ? "ON" : "OFF");
+    mvwprintw(w, row, 1, "%s%-23.23s", sel4 ? " > " : "   ", "Auto-sell");
     wattroff(w, COLOR_PAIR(CP_SELECTED));
     wattroff(w, COLOR_PAIR(CP_GREEN));
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
-    row += 2;
+    wattron(w, asOn ? COLOR_PAIR(CP_GREEN) : COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, row + 1, 4, "%s", asOn ? "ON" : "OFF");
+    wattroff(w, COLOR_PAIR(CP_GREEN));
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    row += 3;
 
     const char *thLabels[] = { "< Uncommon", "< Rare", "< Epic", "< Legendary" };
     int sel5 = (5 == gs->menuIdx);
     if (sel5) wattron(w, COLOR_PAIR(CP_SELECTED));
     else wattron(w, COLOR_PAIR(CP_DEFAULT));
-    mvwprintw(w, row, 1, "%s%-23.23s %s", sel5 ? " > " : "   ",
-              "Sell threshold", thLabels[asTh - 1]);
+    mvwprintw(w, row, 1, "%s%-23.23s", sel5 ? " > " : "   ", "Sell threshold");
     wattroff(w, COLOR_PAIR(CP_SELECTED));
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, row + 1, 4, "%s", thLabels[asTh - 1]);
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
     wattron(w, COLOR_PAIR(CP_CYAN));
