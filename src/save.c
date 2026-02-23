@@ -27,10 +27,11 @@
 #endif
 
 #define SAVE_MAGIC  0x44475256  /* "DGRV" */
-#define SAVE_VER    11
+#define SAVE_VER    12
 #define SAVE_VER_V8  8
 #define SAVE_VER_V9  9
 #define SAVE_VER_V10 10
+#define SAVE_VER_V11 11
 
 /* Return platform-specific save directory: ~/.dungeon-grind or %APPDATA%\.dungeon-grind. */
 static const char *save_dir(void) {
@@ -88,13 +89,16 @@ int load_game(GameState *gs) {
     unsigned int magic, ver;
     if (fread(&magic, sizeof(magic), 1, f) != 1 || magic != SAVE_MAGIC) { fclose(f); return 0; }
     if (fread(&ver,   sizeof(ver),   1, f) != 1)                        { fclose(f); return 0; }
-    if (ver != SAVE_VER && ver != SAVE_VER_V10 && ver != SAVE_VER_V9 && ver != SAVE_VER_V8) { fclose(f); return 0; }
+    if (ver != SAVE_VER && ver != SAVE_VER_V11 && ver != SAVE_VER_V10 && ver != SAVE_VER_V9 && ver != SAVE_VER_V8) { fclose(f); return 0; }
 
     Hero loaded;
     memset(&loaded, 0, sizeof(Hero));
 
     if (ver == SAVE_VER) {
         if (fread(&loaded, sizeof(Hero), 1, f) != 1) { fclose(f); return 0; }
+    } else if (ver == SAVE_VER_V11) {
+        size_t v11Size = sizeof(Hero) - sizeof(loaded.autoSellThreshold);
+        if (fread(&loaded, 1, v11Size, f) != v11Size) { fclose(f); return 0; }
     } else if (ver == SAVE_VER_V10) {
         if (fread(&loaded, sizeof(Hero), 1, f) != 1) { fclose(f); return 0; }
         for (int t = 0; t < NUM_TALENT_TREES; t++) {

@@ -324,6 +324,7 @@ typedef struct {
     int  eliteKills;
     int  hardModeClears;
     int64_t lastSaveTime;
+    int  autoSellThreshold; /* 0=off, 1..4 = auto-sell items below that rarity */
 } Hero;
 
 typedef struct {

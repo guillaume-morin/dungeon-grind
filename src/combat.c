@@ -290,6 +290,16 @@ static void try_boss_loot(GameState *gs) {
         drop = *data_item(candidates[rand() % nc]);
     }
 
+    if (h->autoSellThreshold > 0 && drop.rarity < h->autoSellThreshold) {
+        int sp = drop.price / 2;
+        if (sp < 1) sp = 1;
+        h->gold += sp;
+        char buf[LOG_LINE_W + 1];
+        snprintf(buf, sizeof(buf), "[AUTO-SELL] %s (+%dg)", drop.name, sp);
+        ui_log(gs, buf, CP_DEFAULT);
+        return;
+    }
+
     h->inventory[h->invCount++] = drop;
     char buf[LOG_LINE_W + 1];
     snprintf(buf, sizeof(buf), "[BOSS LOOT] %s!", drop.name);
@@ -314,6 +324,16 @@ static void try_loot_drop(GameState *gs) {
     ItemDef drop;
     data_generate_item(&drop, slot, rarity, dg->levelReq, h->classId);
     
+    if (h->autoSellThreshold > 0 && drop.rarity < h->autoSellThreshold) {
+        int sp = drop.price / 2;
+        if (sp < 1) sp = 1;
+        h->gold += sp;
+        char buf[LOG_LINE_W + 1];
+        snprintf(buf, sizeof(buf), "[AUTO-SELL] %s (+%dg)", drop.name, sp);
+        ui_log(gs, buf, CP_DEFAULT);
+        return;
+    }
+
     h->inventory[h->invCount++] = drop;
     char buf[LOG_LINE_W + 1];
     snprintf(buf, sizeof(buf), "[LOOT] %s!", drop.name);

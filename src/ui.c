@@ -1955,8 +1955,27 @@ static void render_bulk_sell(GameState *gs) {
         row += 3;
     }
 
+    const char *asLabels[] = { "Off", "< Uncommon", "< Rare", "< Epic", "< Legendary" };
+    int as = gs->hero.autoSellThreshold;
+    if (as < 0 || as > 4) as = 0;
+    int sel = (4 == gs->menuIdx);
+
+    if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+    else if (as > 0) wattron(w, COLOR_PAIR(CP_GREEN));
+    else wattron(w, COLOR_PAIR(CP_DEFAULT));
+
+    mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", "Auto-sell on drop");
+    wattroff(w, COLOR_PAIR(CP_SELECTED));
+    wattroff(w, COLOR_PAIR(CP_GREEN));
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+    wattron(w, as > 0 ? COLOR_PAIR(CP_GREEN) : COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, row + 1, 4, "%s", asLabels[as]);
+    wattroff(w, COLOR_PAIR(CP_GREEN));
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
     wattron(w, COLOR_PAIR(CP_CYAN));
-    mvwprintw(w, PANEL_H - 3, 2, "[Enter] Sell");
+    mvwprintw(w, PANEL_H - 3, 2, "[Enter] Sell / Toggle");
     mvwprintw(w, PANEL_H - 2, 2, "[Esc] Cancel");
     wattroff(w, COLOR_PAIR(CP_CYAN));
     wnoutrefresh(w);
@@ -2990,31 +3009,35 @@ void ui_handle_key(GameState *gs, int ch) {
     }
 
     case SCR_BULK_SELL: {
-        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 3; }
-        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > 3) gs->menuIdx = 0; }
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = 4; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx > 4) gs->menuIdx = 0; }
         if (ch == '\n' || ch == KEY_ENTER) {
-            int threshold = gs->menuIdx + 1;
-            int totalGold = 0, count = 0;
-            for (int i = gs->hero.invCount - 1; i >= 0; i--) {
-                if (gs->hero.inventory[i].rarity < threshold) {
-                    int sp = gs->hero.inventory[i].price / 2;
-                    if (sp < 1) sp = 1;
-                    totalGold += sp;
-                    count++;
-                    for (int j = i; j < gs->hero.invCount - 1; j++)
-                        gs->hero.inventory[j] = gs->hero.inventory[j + 1];
-                    gs->hero.invCount--;
+            if (gs->menuIdx == 4) {
+                gs->hero.autoSellThreshold = (gs->hero.autoSellThreshold + 1) % 5;
+            } else {
+                int threshold = gs->menuIdx + 1;
+                int totalGold = 0, count = 0;
+                for (int i = gs->hero.invCount - 1; i >= 0; i--) {
+                    if (gs->hero.inventory[i].rarity < threshold) {
+                        int sp = gs->hero.inventory[i].price / 2;
+                        if (sp < 1) sp = 1;
+                        totalGold += sp;
+                        count++;
+                        for (int j = i; j < gs->hero.invCount - 1; j++)
+                            gs->hero.inventory[j] = gs->hero.inventory[j + 1];
+                        gs->hero.invCount--;
+                    }
                 }
+                if (count > 0) {
+                    gs->hero.gold += totalGold;
+                    char b[LOG_LINE_W + 1];
+                    snprintf(b, sizeof(b), "Sold %d item%s for %dg.",
+                             count, count > 1 ? "s" : "", totalGold);
+                    ui_log(gs, b, CP_YELLOW);
+                }
+                gs->screen = SCR_EQUIPMENT;
+                gs->menuIdx = 0;
             }
-            if (count > 0) {
-                gs->hero.gold += totalGold;
-                char b[LOG_LINE_W + 1];
-                snprintf(b, sizeof(b), "Sold %d item%s for %dg.",
-                         count, count > 1 ? "s" : "", totalGold);
-                ui_log(gs, b, CP_YELLOW);
-            }
-            gs->screen = SCR_EQUIPMENT;
-            gs->menuIdx = 0;
         }
         if (ch == 27) { gs->screen = SCR_EQUIPMENT; gs->menuIdx = 0; }
         break;
