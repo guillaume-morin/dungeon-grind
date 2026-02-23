@@ -1554,10 +1554,10 @@ static void render_ency_combat_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "Bosses are always the dungeon guardian.");
         break;
     case 13: /* Loot System */
-        mvwprintw(w, row++, 2, "Normal: roll vs enemy dropChance.");
-        mvwprintw(w, row++, 2, "Boss: guaranteed weighted rarity drop.");
-        mvwprintw(w, row++, 2, "Weights 50/30/12/6/2 (Com > Legendary)");
-        mvwprintw(w, row++, 2, "Dungeon caps max normal drop rarity.");
+        mvwprintw(w, row++, 2, "Mob drops: randomized level per dungeon.");
+        mvwprintw(w, row++, 2, "D4-D8 mobs: 2%% Epic from static table.");
+        mvwprintw(w, row++, 2, "Boss: tiered weights (higher = more Epic).");
+        mvwprintw(w, row++, 2, "Legendary: D8 boss only (10%% chance).");
         break;
     case 14: /* Hard Mode */
         mvwprintw(w, row++, 2, "[H] in dungeon select. Beat boss first.");
