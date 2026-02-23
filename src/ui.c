@@ -2443,7 +2443,7 @@ static void render_debug(GameState *gs) {
     mvwprintw(w, 2, 2, "Lv.%d  Gold: %d", h->level, h->gold);
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
-    const char *labels[] = { "Reset Character", "Set Level", "Set Gold" };
+    const char *labels[] = { "Reset Character", "Set Level", "Set Gold (+/-10k)" };
     int row = 4;
     for (int i = 0; i < DEBUG_MENU_N; i++) {
         int sel = (i == gs->menuIdx);
@@ -3104,7 +3104,7 @@ void ui_handle_key(GameState *gs, int ch) {
         Hero *h = &gs->hero;
         int step = 1;
         if (gs->menuIdx == 1) step = 1;
-        if (gs->menuIdx == 2) step = 100;
+        if (gs->menuIdx == 2) step = 10000;
 
         if (ch == KEY_RIGHT) {
             if (gs->menuIdx == 1 && h->level < MAX_LEVEL) {
