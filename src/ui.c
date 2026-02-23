@@ -1969,22 +1969,19 @@ static void render_bulk_sell(GameState *gs) {
             if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
             else if (asOn) wattron(w, COLOR_PAIR(CP_GREEN));
             else wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", "Auto-sell");
+            mvwprintw(w, row, 1, "%sAuto-sell %s",
+                      sel ? " > " : "   ", asOn ? "ON" : "OFF");
             wattroff(w, COLOR_PAIR(CP_SELECTED));
             wattroff(w, COLOR_PAIR(CP_GREEN));
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
-            wattron(w, asOn ? COLOR_PAIR(CP_GREEN) : COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row + 1, 4, "%s", asOn ? "ON" : "OFF");
-            wattroff(w, COLOR_PAIR(CP_GREEN));
-            wattroff(w, COLOR_PAIR(CP_DEFAULT));
+            row += 1;
+            continue;
         } else {
             if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
             else wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", "Sell threshold");
+            mvwprintw(w, row, 1, "%sThreshold: %s",
+                      sel ? " > " : "   ", thLabels[asTh - 1]);
             wattroff(w, COLOR_PAIR(CP_SELECTED));
-            wattroff(w, COLOR_PAIR(CP_DEFAULT));
-            wattron(w, COLOR_PAIR(CP_DEFAULT));
-            mvwprintw(w, row + 1, 4, "%s", thLabels[asTh - 1]);
             wattroff(w, COLOR_PAIR(CP_DEFAULT));
         }
         row += 3;
