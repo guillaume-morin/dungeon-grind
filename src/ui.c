@@ -169,7 +169,7 @@ static void render_save_select(GameState *gs) {
 
         if (info->exists) {
             const ClassDef *cd = data_class(info->classId);
-            mvwprintw(w, row, 1, "%s%d. %s %-12.12s Lv.%d",
+            mvwprintw(w, row, 1, "%s%d. %s %-11.11s Lv.%d",
                       sel ? " > " : "   ", i + 1,
                       cd->symbol, info->name, info->level);
         } else {
@@ -218,7 +218,7 @@ static void render_new_slot(GameState *gs) {
 
         if (info->exists) {
             const ClassDef *cd = data_class(info->classId);
-            mvwprintw(w, row, 1, "%s%d. %s %-12.12s Lv.%d",
+            mvwprintw(w, row, 1, "%s%d. %s %-11.11s Lv.%d",
                       sel ? " > " : "   ", i + 1,
                       cd->symbol, info->name, info->level);
         } else {
@@ -1719,6 +1719,9 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
         wattron(w, COLOR_PAIR(erc));
         wprintw(w, " %s", cmp->name);
         wattroff(w, COLOR_PAIR(erc));
+        wattron(w, COLOR_PAIR(CP_DEFAULT));
+        wprintw(w, " (%d)", cmp->levelReq);
+        wattroff(w, COLOR_PAIR(CP_DEFAULT));
     }
 
     int col = 2;
