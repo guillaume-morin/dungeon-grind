@@ -2429,6 +2429,47 @@ static void render_log_panel(GameState *gs) {
     wnoutrefresh(w);
 }
 
+#define DEBUG_MENU_N 3
+
+static void render_debug(GameState *gs) {
+    WINDOW *w = gs->wLeft;
+    werase(w);
+    wattron(w, COLOR_PAIR(CP_BORDER));
+    box(w, 0, 0);
+    wattroff(w, COLOR_PAIR(CP_BORDER));
+
+    wattron(w, COLOR_PAIR(CP_RED) | A_BOLD);
+    mvwprintw(w, 1, 2, "DEBUG");
+    wattroff(w, COLOR_PAIR(CP_RED) | A_BOLD);
+
+    Hero *h = &gs->hero;
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, 2, 2, "Lv.%d  Gold: %d", h->level, h->gold);
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+    const char *labels[] = { "Reset Character", "Set Level", "Set Gold" };
+    int row = 4;
+    for (int i = 0; i < DEBUG_MENU_N; i++) {
+        int sel = (i == gs->menuIdx);
+        if (sel) wattron(w, COLOR_PAIR(CP_SELECTED));
+        else wattron(w, COLOR_PAIR(CP_WHITE));
+        mvwprintw(w, row, 1, "%s%-23.23s", sel ? " > " : "   ", labels[i]);
+        wattroff(w, COLOR_PAIR(CP_SELECTED));
+        wattroff(w, COLOR_PAIR(CP_WHITE));
+        row += 2;
+    }
+
+    wattron(w, COLOR_PAIR(CP_DEFAULT));
+    mvwprintw(w, row + 1, 2, "[L/R] adjust value");
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
+
+    wattron(w, COLOR_PAIR(CP_CYAN));
+    mvwprintw(w, PANEL_H - 3, 2, "[Enter] Apply");
+    mvwprintw(w, PANEL_H - 2, 2, "[Esc] Back");
+    wattroff(w, COLOR_PAIR(CP_CYAN));
+    wnoutrefresh(w);
+}
+
 void ui_render(GameState *gs) {
     if (gs->screen == SCR_TALENTS) {
         render_talents_fullscreen(gs);
@@ -2462,6 +2503,7 @@ void ui_render(GameState *gs) {
     case SCR_ACHIEVEMENTS:  render_achievements(gs);   break;
     case SCR_TITLES:        render_titles(gs);         break;
     case SCR_BULK_SELL:     render_bulk_sell(gs);      break;
+    case SCR_DEBUG:         render_debug(gs);          break;
     default: break;
     }
 
@@ -2570,6 +2612,7 @@ void ui_handle_key(GameState *gs, int ch) {
             }
         }
         if (ch == 'q' || ch == 'Q') { gs->offlineShowUntil = 0; gs->screen = SCR_CONFIRM_QUIT; gs->menuIdx = 0; }
+        if (gs->debugMode && (ch == 'd' || ch == 'D')) { gs->screen = SCR_DEBUG; gs->menuIdx = 0; }
         break;
 
     case SCR_DUNGEON: {
@@ -3055,6 +3098,65 @@ void ui_handle_key(GameState *gs, int ch) {
             }
         }
         if (ch == 27) { gs->screen = SCR_EQUIPMENT; gs->menuIdx = 0; }
+        break;
+    }
+
+    case SCR_DEBUG: {
+        if (ch == KEY_UP) { gs->menuIdx--; if (gs->menuIdx < 0) gs->menuIdx = DEBUG_MENU_N - 1; }
+        if (ch == KEY_DOWN) { gs->menuIdx++; if (gs->menuIdx >= DEBUG_MENU_N) gs->menuIdx = 0; }
+
+        Hero *h = &gs->hero;
+        int step = 1;
+        if (gs->menuIdx == 1) step = 1;
+        if (gs->menuIdx == 2) step = 100;
+
+        if (ch == KEY_RIGHT) {
+            if (gs->menuIdx == 1 && h->level < MAX_LEVEL) {
+                h->xp = 0;
+                h->level++;
+                h->talentPoints++;
+                if (h->level > h->highestLevel) h->highestLevel = h->level;
+                EStats es = hero_effective_stats(h);
+                h->maxHp = es.maxHp;
+                h->hp = h->maxHp;
+                h->resource = h->maxResource;
+            }
+            if (gs->menuIdx == 2) h->gold += step;
+        }
+        if (ch == KEY_LEFT) {
+            if (gs->menuIdx == 1 && h->level > 1) {
+                h->xp = 0;
+                h->level--;
+                EStats es = hero_effective_stats(h);
+                h->maxHp = es.maxHp;
+                h->hp = h->maxHp;
+                h->resource = h->maxResource;
+            }
+            if (gs->menuIdx == 2 && h->gold >= step) h->gold -= step;
+        }
+
+        if (ch == '\n' || ch == KEY_ENTER) {
+            if (gs->menuIdx == 0) {
+                int cls = h->classId;
+                char name[MAX_NAME];
+                strncpy(name, h->name, MAX_NAME - 1);
+                name[MAX_NAME - 1] = '\0';
+                *h = hero_create(cls, name);
+                strncpy(h->name, name, MAX_NAME - 1);
+                EStats es = hero_effective_stats(h);
+                h->maxHp = es.maxHp;
+                h->hp = h->maxHp;
+                gs->inDungeon = 0;
+                gs->hasEnemy = 0;
+                gs->dungeonKills = 0;
+                gs->bossActive = 0;
+                gs->bossTimer = 0;
+                gs->deathTimer = 0;
+                ui_log(gs, "[DEBUG] Character reset.", CP_RED);
+            }
+        }
+
+        if (ch == 27) { gs->screen = SCR_MAIN; gs->menuIdx = 0; }
         break;
     }
     }

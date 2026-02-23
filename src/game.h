@@ -89,7 +89,7 @@ enum Screen {
     SCR_ENCY_ITEMS, SCR_ENCY_ENEMIES, SCR_ENCY_BOSSES,
     SCR_ENCY_SKILLS, SCR_ENCY_DUNGEONS, SCR_ENCY_COMBAT,
     SCR_ACHIEVEMENTS, SCR_TITLES, SCR_BULK_SELL, SCR_ENCY_AFFIXES,
-    SCR_TALENTS
+    SCR_TALENTS, SCR_DEBUG
 };
 
 /* ── color pairs (CP_*) ───────────────────────────────────────────── */
@@ -387,6 +387,7 @@ typedef struct {
 
     char    nameBuf[MAX_NAME];
     int     nameLen;
+    int     debugMode;
 
     WINDOW *wHeader;
     WINDOW *wLeft;

@@ -28,13 +28,15 @@ static long now_ms(void) {
 #define SLEEP_MS(ms) usleep((ms) * 1000)
 #endif
 
-int main(void) {
+int main(int argc, char **argv) {
     srand((unsigned)time(NULL));
 
     GameState gs;
     memset(&gs, 0, sizeof(gs));
     gs.running = 1;
     gs.screen = SCR_SAVE_SELECT;
+    for (int i = 1; i < argc; i++)
+        if (strcmp(argv[i], "--debug") == 0) gs.debugMode = 1;
 
     ui_init(&gs);
     save_refresh_slots(&gs);
