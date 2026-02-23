@@ -307,6 +307,7 @@ static void try_loot_drop(GameState *gs) {
     if (!dg) return;
 
     int maxRar = MOB_MAX_RARITY[gs->currentDungeon];
+    if (maxRar > RARITY_RARE) maxRar = RARITY_RARE;
     int rarity = rand() % (maxRar + 1);
     int slot = rand() % NUM_SLOTS;
     

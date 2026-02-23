@@ -439,13 +439,14 @@ void data_generate_item(ItemDef *out, int slot, int rarity, int level, int class
     snprintf(out->name, MAX_NAME, "%s %s %s", mat, base, suf->name);
 
     static const int SLOT_MUL[NUM_SLOTS] = { 120, 90, 110, 85, 60, 50, 50 };
-    static const int RAR_MUL[3]          = { 60, 85, 120 };
+    static const int RAR_MUL[3]          = { 50, 75, 105 };
+    static const int RAR_FLOOR[3]        = { 2, 3, 5 };
     int budget = (int)((2.0f + level * 1.1f) * SLOT_MUL[slot] / 100.0f
-                       * RAR_MUL[rarity] / 100.0f);
-    if (budget < 2) budget = 2;
-    budget = budget * 5 / 4;  /* 125% — drops reward farming over shop */
+                       * RAR_MUL[rarity] / 100.0f + 0.5f);
+    if (budget < RAR_FLOOR[rarity]) budget = RAR_FLOOR[rarity];
 
     out->stats[suf->stat1] = budget * suf->w1 / 100;
+    if (out->stats[suf->stat1] < 1 && budget >= 2) out->stats[suf->stat1] = 1;
     out->stats[suf->stat2] = budget - out->stats[suf->stat1];
 
     static const int RAR_PRICE[3] = { 1, 3, 8 };
@@ -476,14 +477,13 @@ void data_shop_item(ItemDef *out, int slot, int level, int classId) {
     snprintf(out->name, MAX_NAME, "%s %s %s", mat, base, suf->name);
 
     static const int SLOT_MUL[NUM_SLOTS] = { 120, 90, 110, 85, 60, 50, 50 };
-    static const int RAR_MUL[3]          = { 60, 85, 120 };
+    static const int RAR_MUL[3]          = { 50, 75, 105 };
     int budget = (int)((2.0f + level * 1.1f) * SLOT_MUL[slot] / 100.0f
-                       * RAR_MUL[rarity] / 100.0f);
-    if (budget < 2) budget = 2;
-    budget = budget * 3 / 4;  /* 75% of drop budget — shop is a fallback, not BiS */
+                       * RAR_MUL[rarity] / 100.0f * 0.75f + 0.5f);
     if (budget < 1) budget = 1;
 
     out->stats[suf->stat1] = budget * suf->w1 / 100;
+    if (out->stats[suf->stat1] < 1 && budget >= 2) out->stats[suf->stat1] = 1;
     out->stats[suf->stat2] = budget - out->stats[suf->stat1];
 
     static const int RAR_PRICE[3] = { 1, 3, 8 };
