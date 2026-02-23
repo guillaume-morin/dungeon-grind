@@ -707,7 +707,7 @@ static void render_character(GameState *gs) {
             for (int j = 0; j < NUM_STATS; j++)
                 eqBonus[j] += h->equipment[s].stats[j];
 
-    int treeBonusStat[NUM_STATS] = {0};
+    int talPct[NUM_STATS] = {0};
     for (int t = 0; t < NUM_TALENT_TREES; t++) {
         const TalentTreeDef *td = data_talent_tree(h->classId, t);
         if (!td) continue;
@@ -717,13 +717,12 @@ static void render_character(GameState *gs) {
             for (int b = 0; b < MAX_TALENT_BONUSES; b++) {
                 int val = td->nodes[n].bonus[b].perRank * ranks;
                 switch (td->nodes[n].bonus[b].type) {
-                case TB_FLAT_STR: treeBonusStat[STR] += val; break;
-                case TB_FLAT_AGI: treeBonusStat[AGI] += val; break;
-                case TB_FLAT_INT: treeBonusStat[INT_]+= val; break;
-                case TB_FLAT_WIS: treeBonusStat[WIS] += val; break;
-                case TB_FLAT_VIT: treeBonusStat[VIT] += val; break;
-                case TB_FLAT_DEF: treeBonusStat[DEF] += val; break;
-                case TB_FLAT_SPD: treeBonusStat[SPD] += val; break;
+                case TB_PCT_STR: talPct[STR] += val; break;
+                case TB_PCT_AGI: talPct[AGI] += val; break;
+                case TB_PCT_INT: talPct[INT_]+= val; break;
+                case TB_PCT_WIS: talPct[WIS] += val; break;
+                case TB_PCT_VIT: talPct[VIT] += val; break;
+                case TB_PCT_DEF: talPct[DEF] += val; break;
                 default: break;
                 }
             }
@@ -732,29 +731,28 @@ static void render_character(GameState *gs) {
 
     wattron(w, COLOR_PAIR(CP_DEFAULT));
     mvwprintw(w, row, 9, "%3s", "Tot");
-    mvwprintw(w, row, 13, "%4s", "Tal");
-    mvwprintw(w, row, 18, "%5s", "Equip");
+    mvwprintw(w, row, 13, "%4s", "%T");
+    mvwprintw(w, row, 19, "%4s", "Eq");
     wattroff(w, COLOR_PAIR(CP_DEFAULT));
     row++;
 
     for (int i = 0; i < NUM_STATS; i++) {
-        int tal = h->talents[i] + treeBonusStat[i];
+        int pct = talPct[i];
         int eq = eqBonus[i];
-        char tBuf[8] = "", eBuf[8] = "";
-        if (tal > 0) snprintf(tBuf, sizeof(tBuf), "%d", tal);
-        if (eq > 0)  snprintf(eBuf, sizeof(eBuf), "%d", eq);
 
         wattron(w, COLOR_PAIR(CP_DEFAULT));
         mvwprintw(w, row, 1, "   %-4s %3d", data_stat_short(i), es.stats[i]);
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
-        if (tal > 0) {
+        if (pct > 0) {
+            char pBuf[8];
+            snprintf(pBuf, sizeof(pBuf), "+%d%%", pct);
             wattron(w, COLOR_PAIR(CP_GREEN));
-            mvwprintw(w, row, 13, "%4s", tBuf);
+            mvwprintw(w, row, 13, "%5s", pBuf);
             wattroff(w, COLOR_PAIR(CP_GREEN));
         }
         if (eq > 0) {
             wattron(w, COLOR_PAIR(CP_CYAN));
-            mvwprintw(w, row, 18, "%5s", eBuf);
+            mvwprintw(w, row, 19, "%+5d", eq);
             wattroff(w, COLOR_PAIR(CP_CYAN));
         }
         row++;
@@ -763,10 +761,10 @@ static void render_character(GameState *gs) {
     row++;
     wattron(w, COLOR_PAIR(CP_WHITE));
     mvwprintw(w, row++, 2, "DMG %-4d  Crit %.1f%%", es.damage, es.critChance * 100);
-    mvwprintw(w, row++, 2, "Dodge %.1f%% DR %.1f%%", es.dodgeChance * 100, es.dmgReduction * 100);
+    mvwprintw(w, row++, 2, "CritD %d%% DR %.0f%%", (int)(es.critMult * 100), es.dmgReduction * 100);
+    mvwprintw(w, row++, 2, "Dodge %.1f%% Atk %.1f/s", es.dodgeChance * 100, 1000.0f / es.tickRate);
     if (es.blockChance > 0)
         mvwprintw(w, row++, 2, "Block %.1f%%", es.blockChance * 100);
-    mvwprintw(w, row++, 2, "Atk %.3f/s", 1000.0f / es.tickRate);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     row++;
