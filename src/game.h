@@ -59,7 +59,7 @@
 #define SOFT_CAP        30
 #define BOSS_THRESHOLD  50
 #define BOSS_DELAY      6
-#define MAX_LEVEL       99
+#define MAX_LEVEL       100
 
 #define NUM_ACHIEVEMENTS 20
 #define NUM_TITLES       10
