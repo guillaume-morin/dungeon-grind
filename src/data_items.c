@@ -375,7 +375,7 @@ static const ItemDef ITEMS[] = {
     { "Void Aegis Pendant",SLOT_AMULET, RARITY_EPIC,       78, 60000, { 4,4,4,4,18,16,0}, CM_ALL },
     { "Void Gale Locket", SLOT_AMULET,  RARITY_EPIC,       78, 60000, { 5,5,5,5,6,0,18}, CM_ALL },
 
-    /* ── Legendary weapons (D8 boss exclusive, levelReq 99) ── */
+    /* ── Legendary weapons (D8 boss exclusive, levelReq 100) ── */
     { "Eternity's Edge",  SLOT_WEAPON,  RARITY_LEGENDARY, 100,250000, {110,0,0,0,35,20,0}, CM_WAR },
     { "Eternal Whisper",  SLOT_WEAPON,  RARITY_LEGENDARY, 100,250000, {18,110,0,0,0,0,35}, CM_ROG },
     { "Staff of Ages",    SLOT_WEAPON,  RARITY_LEGENDARY, 100,250000, { 0,0,110,35,0,0,18}, CM_MAG },

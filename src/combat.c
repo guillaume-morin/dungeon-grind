@@ -134,7 +134,7 @@ void check_achievements(GameState *gs) {
     if (h->level >= 25) ACH_SET(h, 8);
     if (h->level >= 50) ACH_SET(h, 9);
     if (h->level >= 75) ACH_SET(h, 10);
-    if (h->level >= 99) ACH_SET(h, 11);
+    if (h->level >= 100) ACH_SET(h, 11);
 
     int allEquipped = 1;
     int allEpic = 1;
@@ -349,8 +349,9 @@ static void try_loot_drop(GameState *gs) {
     int lvl = drop_level(dn);
     ItemDef drop;
 
-    /* 2% Epic from static table for high-tier dungeons (D4-D8) */
-    if (MOB_MAX_RARITY[dn] >= RARITY_EPIC && (rand() % 100) < 2) {
+    /* Epic from static table: 2% for normal mobs, 10% for elites (D4-D8) */
+    int epicChance = gs->isElite ? 10 : 2;
+    if (MOB_MAX_RARITY[dn] >= RARITY_EPIC && (rand() % 100) < epicChance) {
         int candidates[256], nc = 0;
         for (int i = 0; i < data_num_items(); i++) {
             const ItemDef *it = data_item(i);
@@ -368,7 +369,9 @@ static void try_loot_drop(GameState *gs) {
     {
         int maxRar = MOB_MAX_RARITY[dn];
         if (maxRar > RARITY_RARE) maxRar = RARITY_RARE;
-        int rarity = rand() % (maxRar + 1);
+        int minRar = gs->isElite ? RARITY_UNCOMMON : RARITY_COMMON;
+        if (minRar > maxRar) minRar = maxRar;
+        int rarity = minRar + rand() % (maxRar - minRar + 1);
         int slot = rand() % NUM_SLOTS;
         data_generate_item(&drop, slot, rarity, lvl, h->classId);
     }
@@ -540,7 +543,7 @@ void combat_try_skills(GameState *gs) {
  *   2. Decrement skill cooldowns, regen resource
  *   3. Tick buffs (HoT/DoT), try skills (may kill enemy → goto enemy_killed)
  *   4. Normal attack: buff multipliers → crit check → enemy armor (DEF²/(DEF+100)) → deal damage
- *   5. If enemy dies: award gold (/4, min 1) + XP, loot, heal VIT*2, respawn/boss delay
+ *   5. If enemy dies: award gold (min 1) + XP, loot, heal VIT*2, respawn/boss delay
  *   6. Enemy retaliation: dodge → immune → calculate damage → block → shield absorb → HP loss
  *   7. Hero death: lose 10% gold, reset dungeon kills, start revive timer
  *
@@ -631,7 +634,7 @@ enemy_killed:
     if (e->hp <= 0) {
         h->totalKills++;
         if (gs->isElite) h->eliteKills++;
-        int gold = e->goldReward / 4;
+        int gold = e->goldReward;
         if (gold < 1) gold = 1;
         if (gs->hardModeActive) gold = gold * 150 / 100;
         h->gold += gold;
@@ -675,11 +678,7 @@ enemy_killed:
             snprintf(buf, sizeof(buf), "Slew %s! +%dXP +%dG",
                      e->name, xp, gold);
             ui_log(gs, buf, gs->isElite ? CP_YELLOW : CP_GREEN);
-            if (gs->isElite) {
-                try_loot_drop(gs);
-            } else {
-                try_loot_drop(gs);
-            }
+            try_loot_drop(gs);
             hero_add_xp(gs, xp);
             int regen = es.stats[VIT] * 2;
             if (gs->hardModeActive) {

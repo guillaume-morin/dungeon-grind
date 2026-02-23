@@ -170,7 +170,7 @@ int load_game(GameState *gs) {
                 for (int i = 0; i < dg->numEnemies; i++) {
                     const EnemyTemplate *et = data_enemy(dg->enemyIdx[i]);
                     avgXp   += et->xpReward;
-                    avgGold += et->goldReward / 4;
+                    avgGold += et->goldReward;
                 }
                 avgXp   /= dg->numEnemies;
                 avgGold /= dg->numEnemies;

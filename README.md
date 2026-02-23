@@ -144,19 +144,19 @@ Every stat benefits every class. STR always adds HP and a damage fraction. INT a
 
 | Stat | Primary Effect | Secondary Effect |
 |---|---|---|
-| STR | Physical damage (1.5x for warrior) | +1 max HP per point |
-| AGI | Crit chance (AGI/200), dodge (AGI/300) | Attack speed for rogue |
-| INT | Spell damage (1.8x for mage) | +0.2% XP bonus per point |
+| STR | Physical damage (1.5x for warrior) | +2 max HP per point |
+| AGI | Crit chance (AGI/300), dodge (AGI/300) | Attack speed for rogue |
+| INT | Spell damage (1.5x for mage) | +0.2% XP bonus per point |
 | WIS | Heal power (1.5x for priest) | Flat damage reduction (WIS * 0.15) |
 | VIT | +5 max HP per point | Heals VIT*2 HP per kill |
 | DEF | Damage reduction DEF/(DEF+100) | Block chance (warrior only, DEF/250) |
-| SPD | Tick rate: 800 - SPD*8 ms (min 300ms) | — |
+| SPD | Tick rate: 150 + 650/(1+SPD*0.02) ms | — |
 
 Talent points above 30 (soft cap) yield diminishing returns via integer halving: `effective = 30 + (overflow / 2)`. This means every other point past 30 gives no visible bonus — the character screen shows when the next bonus occurs.
 
 ## Talents
 
-Each class has 3 talent trees with 4 tiers of nodes. Talent points are spent to unlock % scaling boosts — not flat stats. Each node provides two bonuses (e.g., +2% STR and +1% VIT), so tree choice determines your build's identity. Talents are the primary way to specialize your hero.
+Each class has 3 talent trees with 5 tiers of nodes. Talent points are spent to unlock % scaling boosts — not flat stats. Each node provides two bonuses (e.g., +2% STR and +1% VIT), so tree choice determines your build's identity. Talents are the primary way to specialize your hero.
 
 ## Dungeons
 
@@ -187,7 +187,7 @@ Skills can be reset for 10 talent points from the skills menu.
 
 7 slots: Weapon, Helmet, Chest, Legs, Boots, Ring, Amulet. Armor is class-specific (warriors wear plate, mages wear robes). Rings and amulets are universal.
 
-5 rarity tiers: Common, Uncommon, Rare, Epic, Legendary. Legendary items are level 99 and only drop from the final dungeon boss.
+5 rarity tiers: Common, Uncommon, Rare, Epic, Legendary. Legendary items are level 100 and only drop from the final dungeon boss.
 
 The shop rotates items up to Epic rarity appropriate for your class and level. You can swap-equip directly from the shop (old item sold automatically). Bulk sell by rarity with keys 1-4 in the equipment screen.
 

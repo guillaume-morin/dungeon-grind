@@ -76,7 +76,7 @@ static const AchievementDef ACHIEVEMENTS[NUM_ACHIEVEMENTS] = {
     { "Veteran",           "Reach level 25",                  0, 30 },
     { "Champion",          "Reach level 50",                  1,  4 },
     { "Legend",            "Reach level 75",                   2,  5 },
-    { "Transcendent",      "Reach level 99",                  0,100 },
+    { "Transcendent",      "Reach level 100",                 0,100 },
     { "Fully Geared",      "Equip all 7 slots",               0, 20 },
     { "Epic Collector",    "All equipment Epic or better",     1,  5 },
     { "Legendary Hero",    "All equipment Legendary",          2, 10 },

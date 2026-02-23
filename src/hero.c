@@ -128,7 +128,7 @@ EStats hero_effective_stats(const Hero *h) {
 
     int pri = es.stats[cd->primaryStat];
     es.maxHp = cd->baseHp + es.stats[VIT] * 5 + es.stats[STR] * 2 + talFlatHp;
-    es.damage = (int)(pri * 1.5f + es.stats[STR] * 0.3f);
+    es.damage = (int)(pri * 1.5f + es.stats[AGI] * 0.2f);
     es.critChance = fminf(0.50f, es.stats[AGI] / 300.0f + talFlatCrit / 100.0f);
     es.critMult   = 1.5f;
     es.dodgeChance = fminf(0.35f, es.stats[AGI] / 300.0f + talFlatDodge / 100.0f);
@@ -143,14 +143,14 @@ EStats hero_effective_stats(const Hero *h) {
 
     switch (h->classId) {
     case CLASS_MAGE:
-        es.damage = (int)(es.stats[INT_] * 1.5f + es.stats[WIS] * 0.5f);
+        es.damage = (int)(es.stats[INT_] * 1.5f + es.stats[WIS] * 0.4f);
         break;
     case CLASS_PRIEST:
-        es.damage = (int)(es.stats[WIS] * 1.2f + es.stats[INT_] * 0.5f);
+        es.damage = (int)(es.stats[WIS] * 1.4f + es.stats[INT_] * 0.2f);
         es.healPower = (int)(es.stats[WIS] * 1.5f + es.stats[INT_] * 0.3f);
         break;
     case CLASS_ROGUE:
-        es.damage = (int)(es.stats[AGI] * 1.4f + es.stats[STR] * 0.4f);
+        es.damage = (int)(es.stats[AGI] * 1.5f + es.stats[STR] * 0.2f);
         es.critMult = 1.8f;
         break;
     default:
