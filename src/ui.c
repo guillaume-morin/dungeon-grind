@@ -2863,10 +2863,10 @@ void ui_handle_key(GameState *gs, int ch) {
                 if (bagIdx >= 0 && bagIdx < viewN) {
                     int realIdx = viewIdx[bagIdx];
                     ItemDef tmp = gs->hero.inventory[realIdx];
+                    for (int i = realIdx; i < gs->hero.invCount - 1; i++)
+                        gs->hero.inventory[i] = gs->hero.inventory[i + 1];
+                    gs->hero.invCount--;
                     if (hero_equip(&gs->hero, &tmp)) {
-                        for (int i = realIdx; i < gs->hero.invCount - 1; i++)
-                            gs->hero.inventory[i] = gs->hero.inventory[i + 1];
-                        gs->hero.invCount--;
                         char b[LOG_LINE_W + 1];
                         snprintf(b, sizeof(b), "Equipped %s.", tmp.name);
                         ui_log(gs, b, CP_GREEN);
@@ -2879,6 +2879,7 @@ void ui_handle_key(GameState *gs, int ch) {
                         else if (viewN == 0)
                             gs->menuIdx = NUM_SLOTS - 1;
                     } else {
+                        gs->hero.inventory[gs->hero.invCount++] = tmp;
                         ui_log(gs, "Can't equip that.", CP_RED);
                     }
                 }
