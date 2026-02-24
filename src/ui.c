@@ -962,8 +962,8 @@ static void render_ency_classes_detail(GameState *gs) {
     wattroff(w, COLOR_PAIR(CP_YELLOW) | A_BOLD);
     wattron(w, COLOR_PAIR(CP_WHITE));
     const char *primary = data_stat_short(cd->primaryStat);
-    mvwprintw(w, 6, 12, "%s:%d HP:%d+%d/Lv",
-              primary, cd->baseStats[cd->primaryStat], cd->baseHp, cd->hpPerLevel);
+    mvwprintw(w, 6, 12, "%s:%d  HP:%d",
+              primary, cd->baseStats[cd->primaryStat], cd->baseHp);
     wattroff(w, COLOR_PAIR(CP_WHITE));
 
     wnoutrefresh(w);
@@ -1012,9 +1012,9 @@ static void render_ency_stats_detail(GameState *gs) {
 
     const char *statDescs[NUM_STATS][3] = {
         { "Increases physical damage", "+2 max HP per point", "Primary: Warrior" },
-        { "Increases crit and dodge chance", "Increases attack speed", "Primary: Rogue" },
-        { "Increases spell damage", "+0.2% XP bonus per point", "Primary: Mage" },
-        { "Increases heal power", "Flat DR of WIS*0.15", "Primary: Priest" },
+        { "Increases crit chance (AGI/300)", "Increases dodge chance (AGI/300)", "Primary: Rogue" },
+        { "Increases spell damage", "+0.5% XP bonus per point (max 50%)", "Primary: Mage" },
+        { "Increases heal power", "Flat damage reduction: WIS*0.15", "Primary: Priest" },
         { "Increases max HP", "Heals VIT*2 HP per kill", "Benefits all classes" },
         { "Reduces damage taken", "Block chance (Warrior)", "Benefits all classes" },
         { "Increases attack speed", "Higher SPD = more attacks/sec", "Benefits all classes" }
@@ -1471,10 +1471,10 @@ static void render_ency_combat_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "Higher SPD = more attacks per second.");
         break;
     case 1: /* Hero Damage */
-        mvwprintw(w, row++, 2, "War STR*1.5  Rog AGI*1.4+STR*0.4");
-        mvwprintw(w, row++, 2, "Mage INT*1.5+WIS*0.5  Pri WIS*1.2");
-        mvwprintw(w, row++, 2, "Rogue gets 1.8x crit multiplier.");
-        mvwprintw(w, row++, 2, "+/-10%% random variance on every hit.");
+        mvwprintw(w, row++, 2, "War: STR*1.5+AGI*0.2");
+        mvwprintw(w, row++, 2, "Rog: AGI*1.5+STR*0.2 (1.8x crit)");
+        mvwprintw(w, row++, 2, "Mage: INT*1.5+WIS*0.4");
+        mvwprintw(w, row++, 2, "Pri: WIS*1.4+INT*0.2  +/-10%% var.");
         break;
     case 2: /* Critical Hits */
         mvwprintw(w, row++, 2, "Crit chance: AGI / 300 (max 50%%)");
@@ -1628,14 +1628,14 @@ static void render_ency_affixes_detail(GameState *gs) {
         mvwprintw(w, row++, 2, "and defensive cooldowns.");
         break;
     case 2: /* Cursed */
-        mvwprintw(w, row++, 2, "All healing and regen reduced");
-        mvwprintw(w, row++, 2, "by 20%%. Affects HP regen,");
-        mvwprintw(w, row++, 2, "HoT, and resource regen.");
+        mvwprintw(w, row++, 2, "Skill healing reduced by 20%%.");
+        mvwprintw(w, row++, 2, "Does not affect HoT buffs or");
+        mvwprintw(w, row++, 2, "resource regeneration.");
         break;
     case 3: /* Thorny */
-        mvwprintw(w, row++, 2, "Enemies reflect 10%% of the");
-        mvwprintw(w, row++, 2, "damage they deal back to");
-        mvwprintw(w, row++, 2, "themselves as thorn damage.");
+        mvwprintw(w, row++, 2, "When an enemy hits you, 10%%");
+        mvwprintw(w, row++, 2, "of that damage is reflected");
+        mvwprintw(w, row++, 2, "back to the enemy.");
         break;
     case 4: /* Frenzied */
         mvwprintw(w, row++, 2, "Enemies are immune to stun.");
