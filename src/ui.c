@@ -1688,22 +1688,21 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
 
     wattron(w, COLOR_PAIR(CP_DEFAULT));
     int infoCol = 2 + (int)strlen(it->name) + 1;
-    if (infoCol < RIGHT_W - 22)
-        mvwprintw(w, 1, infoCol, "(%s %s)",
-                  data_rarity_name(it->rarity), data_slot_name(it->slot));
-    wattroff(w, COLOR_PAIR(CP_DEFAULT));
-
-    if (it->levelReq > 0) {
-        int canUse = gs->hero.level >= it->levelReq;
-        wattron(w, COLOR_PAIR(canUse ? CP_WHITE : CP_RED));
-        mvwprintw(w, 2, 2, "Requires Lv.%d", it->levelReq);
-        wattroff(w, COLOR_PAIR(canUse ? CP_WHITE : CP_RED));
+    if (infoCol < RIGHT_W - 2) {
+        mvwprintw(w, 1, infoCol, "(%s %s)", data_rarity_name(it->rarity), data_slot_name(it->slot));
+        if (it->levelReq > 0) {
+            int canUse = gs->heroCreated ? gs->hero.level >= it->levelReq : 1;
+            wattron(w, COLOR_PAIR(canUse ? CP_WHITE : CP_RED));
+            wprintw(w, " Lv.%d", it->levelReq);
+            wattroff(w, COLOR_PAIR(canUse ? CP_WHITE : CP_RED));
+        }
     }
+    wattroff(w, COLOR_PAIR(CP_DEFAULT));
 
     if (cmp) {
         int erc = data_rarity_color(cmp->rarity);
         wattron(w, COLOR_PAIR(CP_DEFAULT));
-        mvwprintw(w, 3, 2, "Worn:");
+        mvwprintw(w, 2, 2, "Worn:");
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
         wattron(w, COLOR_PAIR(erc));
         wprintw(w, " %s", cmp->name);
@@ -1713,7 +1712,7 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
     }
 
-    int startRow = cmp ? 5 : 4;
+    int startRow = cmp ? 4 : 3;
     for (int i = 0; i < NUM_STATS; i++) {
         int row = startRow + (i / 3);
         int col = 2 + (i % 3) * 16;
