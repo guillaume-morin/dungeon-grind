@@ -1712,7 +1712,7 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
     }
 
-    int startRow = cmp ? 4 : 3;
+    int startRow = 4;
     for (int i = 0; i < NUM_STATS; i++) {
         int row = startRow + (i / 3);
         int col = 2 + (i % 3) * 16;
