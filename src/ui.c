@@ -1713,23 +1713,23 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
         wattroff(w, COLOR_PAIR(CP_DEFAULT));
     }
 
-    int col = 2;
-    int row = cmp ? 5 : 4;
+    int startRow = cmp ? 5 : 4;
     for (int i = 0; i < NUM_STATS; i++) {
+        int row = startRow + (i / 3);
+        int col = 2 + (i % 3) * 16;
+        if (row >= ENEMY_DISPLAY_H - 1) break;
+
         int sv = it->stats[i];
         int ev = cmp ? cmp->stats[i] : 0;
-        if (sv == 0 && ev == 0) continue;
         int diff = sv - ev;
 
-        if (sv > 0) {
-            wattron(w, COLOR_PAIR(CP_GREEN));
+        int vc = sv > 0 ? CP_GREEN : CP_DEFAULT;
+        wattron(w, COLOR_PAIR(vc));
+        if (sv != 0)
             mvwprintw(w, row, col, "%-4s%+d", data_stat_short(i), sv);
-            wattroff(w, COLOR_PAIR(CP_GREEN));
-        } else {
-            wattron(w, COLOR_PAIR(CP_WHITE));
-            mvwprintw(w, row, col, "%-4s  ", data_stat_short(i));
-            wattroff(w, COLOR_PAIR(CP_WHITE));
-        }
+        else
+            mvwprintw(w, row, col, "%-4s -", data_stat_short(i));
+        wattroff(w, COLOR_PAIR(vc));
 
         if (cmp) {
             int dc = diff > 0 ? CP_GREEN : (diff < 0 ? CP_RED : CP_DEFAULT);
@@ -1737,10 +1737,6 @@ static void render_item_detail(GameState *gs, const ItemDef *it, const ItemDef *
             wprintw(w, "(%+d)", diff);
             wattroff(w, COLOR_PAIR(dc));
         }
-
-        col += 16;
-        if (col + 14 > RIGHT_W - 2) { col = 2; row++; }
-        if (row >= ENEMY_DISPLAY_H - 1) break;
     }
 
     wnoutrefresh(w);
